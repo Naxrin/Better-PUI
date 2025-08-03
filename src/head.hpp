@@ -3,6 +3,12 @@
 using namespace geode::prelude;
 
 const auto gm = GameManager::sharedState();
+
+/*
+static PauseLayer* pl;
+static GameOptionsLayer* opl;
+*/
+
 // event
 // for positions we have unique index system
 // for others robtop has this own
@@ -13,6 +19,16 @@ public:
     Signal(int tag, float value) {
         this->tag = tag;
         this->value = value;
+    }
+};
+
+class PosSignal : public Event {
+public:
+    int tag;
+    CCPoint pos;
+    PosSignal(int tag, CCPoint pos) {
+        this->tag = tag;
+        this->pos = pos;
     }
 };
 
@@ -43,6 +59,7 @@ public:
 class InputSliderBundle : public CCMenu, public TextInputDelegate {
 protected:
     float min, max;
+    int accu;
     TextInput* m_input;
     Slider* m_slider;
     // init
@@ -70,35 +87,122 @@ public:
     }
 };
 
-class PreviewFrame : public CCNode {
+class PreviewFrame : public CCLayer {
 protected:
-    // target node;
-    CCNode* m_target;
-    CCSprite* m_sprL, * m_sprR;
+    // grid
+    CCSprite* m_border, * m_grid;
+    // vector to fade
+    std::vector<CCLayerColor*> hori, vert;
     // init
-    bool init();
-    /*
-    bool ccTouchBegan(CCTouch* touch, CCEvent* event);
-    void ccTouchMoved(CCTouch* touch, CCEvent* event);
-    void ccTouchEnded(CCTouch* touch, CCEvent* event);
-    */
+    virtual bool init() override;
 public:
     // change the density of grid
+    // preserved for future update
     void reGrid(int d);
+    // help fade in / out
+    virtual void helpTransition(bool in);
+
+    void setGridVisibility(bool visible) {
+        for (auto v : vert)
+            v->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.3, visible * (240 - 96 * bool(v->getPositionX())))));   
+        for (auto h : hori)
+            h->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.3, visible * (240 - 96 * bool(h->getPositionY())))));   
+    }
+};
+
+class PracticePreviewFrame : public PreviewFrame {
+protected:
+    // target node;
+    CCSprite* m_target;
+    CCSprite* m_sprL, * m_sprR;
+
+    bool init() override;
+    bool ccTouchBegan(CCTouch* touch, CCEvent* event) override;
+    void ccTouchMoved(CCTouch* touch, CCEvent* event) override;
+    void ccTouchEnded(CCTouch* touch, CCEvent* event) override;
+public:
     // set position of target node
     CCNode* getTargetNode() {
         return this->m_target;
     }
-    void placeNode(const CCPoint& pos) {
-        this->m_target->setPosition(pos);
-    }
-    void alphaNode(GLubyte opacity) {
-        this->m_sprL->setOpacity(opacity);
-        this->m_sprR->setOpacity(opacity);
+
+    void helpTransition(bool in) override {
+        this->alphaNode(in * 255 * gm->m_practiceOpacity, 0.3);        
+        PreviewFrame::helpTransition(in);
     }
 
-    static PreviewFrame* create() {
-        auto node = new PreviewFrame();
+    void placeNode(const CCPoint& pos) {
+        this->m_target->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.2, pos)));
+        //this->m_target->setPosition(pos);
+    }
+
+    void alphaNode(GLubyte opacity, float set = 0) {
+        if (set) {
+            this->m_sprL->runAction(CCEaseExponentialOut::create(CCFadeTo::create(set, opacity)));
+            this->m_sprR->runAction(CCEaseExponentialOut::create(CCFadeTo::create(set, opacity)));
+        } else {
+            this->m_sprL->setOpacity(opacity);
+            this->m_sprR->setOpacity(opacity);            
+        }
+    }
+    static PracticePreviewFrame* create() {
+        auto node = new PracticePreviewFrame();
+        if (node && node->init()) {
+            node->autorelease();
+            return node;
+        };
+        CC_SAFE_DELETE(node);
+        return nullptr;
+    }
+};
+
+class PlatformPreviewFrame : public PreviewFrame {
+protected:
+    // dual mode
+    bool dual; 
+    // current
+    int current;
+    // target node;
+    GJUINode* sNode, * p1mNode, * p2mNode,* p1jNode,* p2jNode;
+    //GJUINode* index[4] = {p1mNode, p2mNode, p1jNode, p2jNode};
+
+    bool init() override;
+    bool ccTouchBegan(CCTouch* touch, CCEvent* event) override;
+    void ccTouchMoved(CCTouch* touch, CCEvent* event) override;
+    void ccTouchEnded(CCTouch* touch, CCEvent* event) override;
+public:
+    // set position of target node
+    GJUINode* getTargetNode(int tag) {
+        return static_cast<GJUINode*>(this->getChildByTag(tag));
+    }
+
+    void helpTransition(bool in) override {
+        this->alphaNode(0, in * 255 * gm->m_dpad1.m_opacity, 0.3);
+        this->alphaNode(1, in * 255 * gm->m_dpad1.m_opacity, 0.3);
+        this->alphaNode(2, in * 255 * gm->m_dpad1.m_opacity, 0.3);
+        this->alphaNode(3, in * 255 * gm->m_dpad1.m_opacity, 0.3);
+        this->alphaNode(4, in * 255 * gm->m_dpad1.m_opacity, 0.3);
+        PreviewFrame::helpTransition(in);
+    }
+
+    void placeNode(int tag, const CCPoint& pos) {
+        this->getChildByTag(tag)->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.2, pos)));
+    }
+
+    void alphaNode(int tag, GLubyte opacity, float set = 0) {
+        auto target = static_cast<GJUINode*>(this->getChildByTag(tag));
+        if (set) {
+            target->m_firstSprite->runAction(CCEaseExponentialOut::create(CCFadeTo::create(set, opacity)));
+            if (!target->m_oneButton)
+                target->m_secondSprite->runAction(CCEaseExponentialOut::create(CCFadeTo::create(set, opacity)));
+        } else {
+            target->m_firstSprite->setOpacity(opacity);
+            if (!target->m_oneButton)
+                target->m_secondSprite->setOpacity(opacity);           
+        }
+    }
+    static PlatformPreviewFrame* create() {
+        auto node = new PlatformPreviewFrame();
         if (node && node->init()) {
             node->autorelease();
             return node;
