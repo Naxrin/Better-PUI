@@ -32,6 +32,16 @@ public:
     }
 };
 
+class SizeSignal : public Event {
+public:
+    int tag;
+    CCSize size;
+    SizeSignal(int tag, CCSize size) {
+        this->tag = tag;
+        this->size = size;
+    }
+};
+
 // a new added bundle that allow to set position in two inputs
 class PosInputBundle : public CCMenu, public TextInputDelegate {
 protected:
@@ -63,12 +73,13 @@ protected:
     TextInput* m_input;
     Slider* m_slider;
     // init
-    bool init(const char* title, int tag, float min, float max, int accu);
+    bool init(const char* title, int tag, float min, float max, int accu, bool force);
     // inputer
     void textChanged(CCTextInputNode* input) override;
     // slider
     void onSlider(CCObject* sender);
 public:
+    // set the inner value of inputer and slider
     void setValue(float val);
     // create it
     // @param title text label
@@ -76,9 +87,10 @@ public:
     // @param min mininum value
     // @param max maxinum value
     // @param accu accuracy, zero for int
-    static InputSliderBundle* create(const char* title, int tag, float min, float max, int accu) {
+    // @param force do not approve a text input value out of range
+    static InputSliderBundle* create(const char* title, int tag, float min, float max, int accu, bool force) {
         auto node = new InputSliderBundle();
-        if (node && node->init(title, tag, min, max, accu)) {
+        if (node && node->init(title, tag, min, max, accu, force)) {
             node->autorelease();
             return node;
         };
@@ -101,7 +113,7 @@ public:
     void reGrid(int d);
     // help fade in / out
     virtual void helpTransition(bool in);
-
+    // set visibility of inner grid
     void setGridVisibility(bool visible) {
         for (auto v : vert)
             v->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.3, visible * (240 - 96 * bool(v->getPositionX())))));   
@@ -133,7 +145,6 @@ public:
 
     void placeNode(const CCPoint& pos) {
         this->m_target->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.2, pos)));
-        //this->m_target->setPosition(pos);
     }
 
     void alphaNode(GLubyte opacity, float set = 0) {
@@ -178,10 +189,10 @@ public:
 
     void helpTransition(bool in) override {
         this->alphaNode(0, in * 255 * gm->m_dpad1.m_opacity, 0.3);
-        this->alphaNode(1, in * 255 * gm->m_dpad1.m_opacity, 0.3);
-        this->alphaNode(2, in * 255 * gm->m_dpad1.m_opacity, 0.3);
-        this->alphaNode(3, in * 255 * gm->m_dpad1.m_opacity, 0.3);
-        this->alphaNode(4, in * 255 * gm->m_dpad1.m_opacity, 0.3);
+        this->alphaNode(1, in * 255 * gm->m_dpad2.m_opacity, 0.3);
+        this->alphaNode(2, in * 255 * gm->m_dpad3.m_opacity, 0.3);
+        this->alphaNode(3, in * 255 * gm->m_dpad4.m_opacity, 0.3);
+        this->alphaNode(4, in * 255 * gm->m_dpad5.m_opacity, 0.3);
         PreviewFrame::helpTransition(in);
     }
 

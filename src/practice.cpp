@@ -14,14 +14,15 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
         CCLabelBMFont* titleLabel;
 		// input menu
 		PosInputBundle* posMenu;
-		// opacity menu
+		// several slider menus
 		InputSliderBundle* opacityMenu;
+
 		// map
 		PracticePreviewFrame* map;
 
 		// radio
 		EventListener<EventFilter<Signal>> radio;
-        // pos radio
+        // planar radio
         EventListener<EventFilter<PosSignal>> radioPos;
 	};
 
@@ -39,9 +40,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
                 return ListenerResult::Stop;
             });
 
-		// pl and opl
-		auto scene = CCScene::get();
-		m_fields->opl = scene->getChildByType<GameOptionsLayer>(0);
+		// game options layer below
+		m_fields->opl = CCScene::get()->getChildByType<GameOptionsLayer>(0);
 
 		// bg color
 		this->setColor(Mod::get()->getSettingValue<ccColor3B>("bgcolor"));
@@ -68,18 +68,21 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		// relocate the practice node
 		this->m_practiceNode = m_fields->map->getTargetNode();
 
+		// pos menu
 		m_fields->posMenu = PosInputBundle::create();
 		m_fields->posMenu->setPositionY(m_fields->size.height / 4 - 20.f);
 		m_fields->posMenu->setScale(0.5);
         m_fields->posMenu->setValue(gm->m_practicePos);
 		this->m_mainLayer->addChild(m_fields->posMenu);
 
-		m_fields->opacityMenu = InputSliderBundle::create("Opacity", -29, 0, 1, 2);
+		// opacity menu
+		m_fields->opacityMenu = InputSliderBundle::create("Opacity", -29, 0, 1, 2, true);
 		m_fields->opacityMenu->setPositionY(m_fields->size.height / 4 - 50.f);
 		m_fields->opacityMenu->setScale(0.5);
         m_fields->opacityMenu->setValue(gm->m_practiceOpacity);
 		this->m_mainLayer->addChild(m_fields->opacityMenu);
 
+		// buttons below
         std::map<const char*, SEL_MenuHandler> btnIndexes = {
             {"optionsBtn.png"_spr, menu_selector(PracticeOptionsLayer::onOptions)},
             {"fullscreenBtn.png"_spr, menu_selector(PracticeOptionsLayer::onPreview)},
