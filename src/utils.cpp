@@ -605,7 +605,8 @@ void SlotFrame::parse() {
     std::regex pt(this->dual ? R"w(([-\d.,]+);([-\d.,]+);([-\d.,]+);([-\d.,]+))w" : R"w(([-\d.,]+);([01]))w");
     std::smatch match;
     // match
-    this->real = std::regex_match(*this->raw, match, pt);
+    std::string str = fmt::format("{}", *this->raw);
+    this->real = std::regex_match(str, match, pt);
     //log::debug("parse full raw str = {} ret = {}", *raw, this->real);
     if (!this->real)
         return;
