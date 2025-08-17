@@ -11,6 +11,11 @@
 	"version": "v3.0.0",
 	"developer": "naxrin",
 	"description": "Less stupid Platform/Practice Btn modify UI",
+	"resources": {
+		"sprites": [
+			"resources/*"
+		]
+	},
 	"dependencies": {
 		"geode.node-ids": {
 			"version": "1.20.1",
@@ -18,12 +23,6 @@
 	    }
 	},
 	"settings": {
-		"bgcolor": {
-			"name": "Background Color",
-			"description": "Default to blue",
-			"type": "color",
-			"default": "334499"
-		},
         "bgopacity": {
 			"name": "Background Opacity",
 			"description": "0~255 Default to full",

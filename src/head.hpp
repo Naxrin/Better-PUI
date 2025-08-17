@@ -4,14 +4,8 @@ using namespace geode::prelude;
 
 const auto gm = GameManager::sharedState();
 
-/*
-static PauseLayer* pl;
-static GameOptionsLayer* opl;
-*/
-
-// event
-// for positions we have unique index system
-// for others robtop has this own
+// single value signal
+// using unique index system
 class Signal : public Event {
 public:
     int tag;
@@ -22,6 +16,8 @@ public:
     }
 };
 
+// position tuple signal
+// posted when a node is dragged
 class PosSignal : public Event {
 public:
     int tag;
@@ -32,26 +28,19 @@ public:
     }
 };
 
-class SizeSignal : public Event {
-public:
-    int tag;
-    CCSize size;
-    SizeSignal(int tag, CCSize size) {
-        this->tag = tag;
-        this->size = size;
-    }
-};
+// 
 
-// a new added bundle that allow to set position in two inputs
+// a menu bundle to set position in two inputs
 class PosInputBundle : public CCMenu, public TextInputDelegate {
 protected:
+    // the inputers
     TextInput* m_inputX, * m_inputY;
     // init
     bool init() override;
-    // text input feedback
+    // text input callback
     void textChanged(CCTextInputNode* input) override;
 public:
-    // set its value
+    // direct set its value
     void setValue(const CCPoint &pos);
     // create it
     static PosInputBundle* create() {
@@ -70,10 +59,11 @@ class InputSliderBundle : public CCMenu, public TextInputDelegate {
 protected:
     float min, max;
     int accu;
+    bool force;
     TextInput* m_input;
     Slider* m_slider;
     // init
-    bool init(const char* title, int tag, float min, float max, int accu, bool force);
+    bool init(const char* title, float min, float max, int accu);
     // inputer
     void textChanged(CCTextInputNode* input) override;
     // slider
@@ -83,14 +73,12 @@ public:
     void setValue(float val);
     // create it
     // @param title text label
-    // @param tag tag of the target value
     // @param min mininum value
     // @param max maxinum value
     // @param accu accuracy, zero for int
-    // @param force do not approve a text input value out of range
-    static InputSliderBundle* create(const char* title, int tag, float min, float max, int accu, bool force) {
+    static InputSliderBundle* create(const char* title, float min, float max, int accu) {
         auto node = new InputSliderBundle();
-        if (node && node->init(title, tag, min, max, accu, force)) {
+        if (node && node->init(title, min, max, accu)) {
             node->autorelease();
             return node;
         };
@@ -111,51 +99,35 @@ public:
     // change the density of grid
     // preserved for future update
     void reGrid(int d);
-    // help fade in / out
+    // fade the grid line
     virtual void helpTransition(bool in);
-    // set visibility of inner grid
-    void setGridVisibility(bool visible) {
-        for (auto v : vert)
-            v->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.3, visible * (240 - 96 * bool(v->getPositionX())))));   
-        for (auto h : hori)
-            h->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.3, visible * (240 - 96 * bool(h->getPositionY())))));   
-    }
+    // set visibility of inner grid line
+    void setGridVisibility(bool visible);
 };
 
 class PracticePreviewFrame : public PreviewFrame {
 protected:
     // target node;
     CCSprite* m_target;
+    // target sprites
     CCSprite* m_sprL, * m_sprR;
 
+    // init
     bool init() override;
+    // detect the node should be dragged or not, elsewise quit preview
     bool ccTouchBegan(CCTouch* touch, CCEvent* event) override;
+    // drag node and post position signal
     void ccTouchMoved(CCTouch* touch, CCEvent* event) override;
+    // snap or not
     void ccTouchEnded(CCTouch* touch, CCEvent* event) override;
 public:
-    // set position of target node
-    CCNode* getTargetNode() {
-        return this->m_target;
-    }
-
-    void helpTransition(bool in) override {
-        this->alphaNode(in * 255 * gm->m_practiceOpacity, 0.3);        
-        PreviewFrame::helpTransition(in);
-    }
-
-    void placeNode(const CCPoint& pos) {
-        this->m_target->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.2, pos)));
-    }
-
-    void alphaNode(GLubyte opacity, float set = 0) {
-        if (set) {
-            this->m_sprL->runAction(CCEaseExponentialOut::create(CCFadeTo::create(set, opacity)));
-            this->m_sprR->runAction(CCEaseExponentialOut::create(CCFadeTo::create(set, opacity)));
-        } else {
-            this->m_sprL->setOpacity(opacity);
-            this->m_sprR->setOpacity(opacity);            
-        }
-    }
+    // also fade the two sprites
+    void helpTransition(bool in) override;
+    // place the node somewhere with action
+    void placeNode(const CCPoint& pos);
+    // set the node's opacity with action
+    void alphaNode(GLubyte opacity, float d = 0);
+    // create it
     static PracticePreviewFrame* create() {
         auto node = new PracticePreviewFrame();
         if (node && node->init()) {
@@ -169,52 +141,108 @@ public:
 
 class PlatformPreviewFrame : public PreviewFrame {
 protected:
-    // dual mode
-    bool dual; 
-    // current
+    // generated as preview
+    bool preview;
+    // current ID (never be zero)
     int current;
+    // activated
+    bool activate;
     // target node;
-    GJUINode* sNode, * p1mNode, * p2mNode,* p1jNode,* p2jNode;
-    //GJUINode* index[4] = {p1mNode, p2mNode, p1jNode, p2jNode};
-
-    bool init() override;
+    GJUINode* p1mNode, * p2mNode,* p1jNode,* p2jNode;
+    // init the five gjuinodes
+    bool init(bool preview);
+    // for dual mode, detect the current node is dragged or not, then the other nodes, elsewise quit preview
     bool ccTouchBegan(CCTouch* touch, CCEvent* event) override;
+    // drag the node and post position signal
     void ccTouchMoved(CCTouch* touch, CCEvent* event) override;
+    // snap or not
     void ccTouchEnded(CCTouch* touch, CCEvent* event) override;
 public:
-    // set position of target node
-    GJUINode* getTargetNode(int tag) {
-        return static_cast<GJUINode*>(this->getChildByTag(tag));
-    }
-
-    void helpTransition(bool in) override {
-        this->alphaNode(0, in * 255 * gm->m_dpad1.m_opacity, 0.3);
-        this->alphaNode(1, in * 255 * gm->m_dpad2.m_opacity, 0.3);
-        this->alphaNode(2, in * 255 * gm->m_dpad3.m_opacity, 0.3);
-        this->alphaNode(3, in * 255 * gm->m_dpad4.m_opacity, 0.3);
-        this->alphaNode(4, in * 255 * gm->m_dpad5.m_opacity, 0.3);
-        PreviewFrame::helpTransition(in);
-    }
-
-    void placeNode(int tag, const CCPoint& pos) {
-        this->getChildByTag(tag)->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.2, pos)));
-    }
-
-    void alphaNode(int tag, GLubyte opacity, float set = 0) {
-        auto target = static_cast<GJUINode*>(this->getChildByTag(tag));
-        if (set) {
-            target->m_firstSprite->runAction(CCEaseExponentialOut::create(CCFadeTo::create(set, opacity)));
-            if (!target->m_oneButton)
-                target->m_secondSprite->runAction(CCEaseExponentialOut::create(CCFadeTo::create(set, opacity)));
-        } else {
-            target->m_firstSprite->setOpacity(opacity);
-            if (!target->m_oneButton)
-                target->m_secondSprite->setOpacity(opacity);           
-        }
-    }
-    static PlatformPreviewFrame* create() {
+    // get current modified tag (zero for single mode)
+    int getCurrent();
+    // switch between single mode and dual mode
+    void switchDual();
+    // get target node as GJUINode class
+    GJUINode* getTargetNode(int tag);
+    // fade the visible nodes
+    void helpTransition(bool in) override;
+    // update the state of a node
+    void updateState(int tag, const UIButtonConfig &config, float d = 0);
+    void updateState(GJUINode* node, const UIButtonConfig &config, float d = 0);
+    // set position of target node with action
+    void placeNode(int tag, const CCPoint& pos, float d = 0);
+    void placeNode(GJUINode* node, const CCPoint& pos, float d = 0);
+    // set opacity of target node with action
+    void alphaNode(int tag, GLubyte opacity, float d = 0);
+    void alphaNode(GJUINode* node, GLubyte opacity, float d = 0);
+    // set scale of target node with action
+    void scaleNode(int tag, float scale, float d = 0);
+    void scaleNode(GJUINode* node, float scale, float d = 0);
+    // set node radius
+    void radiusNode(int tag, float r, float d = 0);
+    void radiusNode(GJUINode* node, float r, float d = 0);
+    // create it
+    static PlatformPreviewFrame* create(bool preview) {
         auto node = new PlatformPreviewFrame();
-        if (node && node->init()) {
+        if (node && node->init(preview)) {
+            node->autorelease();
+            return node;
+        };
+        CC_SAFE_DELETE(node);
+        return nullptr;
+    }
+};
+
+class SlotFrame : public CCMenu {
+protected:
+    // dual
+    bool dual;
+    // in preview
+    bool showing;
+    // really has data or is empty
+    bool real = true;
+    // raw string of this config
+    std::string* raw;
+    // screen size
+    const CCSize size = CCDirector::sharedDirector()->getWinSize();
+    // bg
+    CCLayerColor* bg;
+    // button config
+    CCLabelBMFont* titleLabel;
+    CCLabelBMFont* descLabel;
+    CCMenuItemSpriteExtra* prevBtn;
+    CCMenuItemSpriteExtra* saveBtn;
+    CCMenuItemSpriteExtra* loadBtn;
+    // init
+    bool init(int nametag);
+    // parse 
+    void parseSingleBtn(UIButtonConfig &config, std::string raw);
+    // dump
+    std::string dumpSingleBtn(UIButtonConfig const &config);
+    // parse from string
+    void parse();
+    // change a desc label
+    // I do this cuz cocos logic in setString with \n is terrible
+    void refreshDescLabel();
+public:
+    // config
+    UIButtonConfig p1m, p2m, p1j, p2j;
+    // jumpL
+    bool jumpL;
+    // set dual status
+    void setDualStatus(bool dual);
+    // preview this config
+    void onPreview(CCObject*);
+    // resume
+    void resume();
+    // dump current to slot
+    void onSave(CCObject*);
+    // apply to curreent
+    void onApply(CCObject*);
+    // create
+    static SlotFrame* create(int nametag) {
+        auto node = new SlotFrame();
+        if (node && node->init(nametag)) {
             node->autorelease();
             return node;
         };

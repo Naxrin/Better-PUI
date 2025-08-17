@@ -6,6 +6,7 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS" OR IOS)
 else()
     set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
 endif()
+# set(ANDROID_NDK_ROOT "D:/AndroidNDK")
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 project(BetterPUI VERSION 1.0.0)

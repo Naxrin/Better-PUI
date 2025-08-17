@@ -2,24 +2,44 @@
 #include "head.hpp"
 
 #include <Geode/modify/UIOptionsLayer.hpp>
-class $modify(UIOptionsLayer) {
+class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 	struct Fields {
 		const CCSize size = CCDirector::sharedDirector()->getWinSize();
 
+		UIButtonConfig* config[5] = {&gm->m_dpad1, &gm->m_dpad2, &gm->m_dpad3, &gm->m_dpad4, &gm->m_dpad5};
 		// ui to hide
 		GameOptionsLayer* opl;
+
+		// pages
+		//std::vector<Pages> pages;
+
+		// on browsing preview
+		int slpage;
+		// current id
+		int id;
+		// in preview
+		bool inprev;
 
 		// title
         CCLabelBMFont* titleLabel;
 		// planar menus
 		PosInputBundle* posMenu;
 		// input slider menus
-		InputSliderBundle* widthMenu, * heightMenu, * scaleMenu, * opacityMenu, * dzMenu, * radiusMenu;
-		// check boxes
-        CCMenuItemToggler* modeBtn, * snapBtn, * splitBtn, * jumplBtn, * dualBtn;
+		InputSliderBundle* widthMenu, * heightMenu, * scaleMenu, * opacityMenu, * deadzoneMenu, * radiusMenu;
 		// map
-		PlatformPreviewFrame* map;
+		PlatformPreviewFrame* map, * preview;
 
+		// some sprites
+		CCSprite* dualSpr, * snapSpr;
+
+		// labels
+		CCLabelBMFont* modeLabel, * snapLabel, * splitLabel, * jumplLabel, * symmetryLabel;
+
+		// the btns
+		CCMenuItemSpriteExtra* modeBtn, * snapBtn, * splitBtn, * jumplBtn, * symmetryBtn;
+
+		// slots
+		SlotFrame* slots[3];
 		// radio
 		EventListener<EventFilter<Signal>> radio;
         // pos radio
@@ -33,23 +53,28 @@ class $modify(UIOptionsLayer) {
 		this->m_fields->radio = EventListener<EventFilter<Signal>>(
             [this](Signal* event) -> ListenerResult { return this->handleSignal(event); });
 
-		this->setColor(Mod::get()->getSettingValue<ccColor3B>("bgcolor"));
-		this->setOpacity(Mod::get()->getSettingValue<int64_t>("bgopacity"));
-
 		this->m_fields->radioPos = EventListener<EventFilter<PosSignal>>(
             [this](PosSignal* event) -> ListenerResult {
                 this->m_fields->posMenu->setValue(event->pos);
-                gm->m_practicePos = event->pos;
+                this->m_fields->config[m_fields->id]->m_position = event->pos;
+				// symmetric dual
+				if (!event->tag || !m_fields->id || !Mod::get()->getSavedValue<bool>("symmetry"))
+					return ListenerResult::Stop;
+				auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
+				//log::debug("mirror = {}", mirror);
+				this->m_fields->config[mirror]->m_position = ccp(m_fields->size.width - event->pos.x, event->pos.y);
+				this->m_fields->map->placeNode(mirror, ccp(m_fields->size.width - event->pos.x, event->pos.y), 0.2);
                 return ListenerResult::Stop;
             });
-
 
 		// game options layer below
 		m_fields->opl = CCScene::get()->getChildByType<GameOptionsLayer>(0);
 
 		// bg color
-		this->setColor(Mod::get()->getSettingValue<ccColor3B>("bgcolor"));
+		this->setColor(ccc3(0, 0, 0));
 		this->setOpacity(0);
+
+		m_fields->id = Mod::get()->getSavedValue<bool>("dual");
 
 		// hide the frame
 		this->m_mainLayer->getChildByTag(1)->setVisible(false);
@@ -61,69 +86,460 @@ class $modify(UIOptionsLayer) {
         this->m_mainLayer->addChild(m_fields->titleLabel);
 
 		// the center map who can be scaled in game
-		m_fields->map = PlatformPreviewFrame::create();
-        m_fields->map->setPosition(ccp(50.f, 30.f));
+		m_fields->map = PlatformPreviewFrame::create(false);
+        m_fields->map->setPosition(ccp(100.f, 30.f));
         m_fields->map->setScale(0.25);
-		//m_fields->map->placeNode(gm->m_practicePos);
-        //m_fields->map->alphaNode(gm->m_practiceOpacity * 255);
+		m_fields->map->setTag(114);
 		this->m_mainLayer->addChild(m_fields->map);
+
+		// the preview of slot data
+		m_fields->preview = PlatformPreviewFrame::create(true);
+        m_fields->preview->setPosition(ccp(0.f, 30.f));
+        m_fields->preview->setScale(0);
+		m_fields->preview->setTag(514);
+		this->m_mainLayer->addChild(m_fields->preview);
+
+		this->m_uiNode1 = this->m_fields->map->getTargetNode(m_fields->id);
+		this->m_uiNode2 = this->m_fields->map->getTargetNode(2);
+		this->m_uiNode3 = this->m_fields->map->getTargetNode(3);
+		this->m_uiNode4 = this->m_fields->map->getTargetNode(4);
 
         // pos menu
 		m_fields->posMenu = PosInputBundle::create();
-		m_fields->posMenu->setPosition(ccp(50.f, m_fields->size.height / 4 - 20.f));
+		m_fields->posMenu->setPositionY(m_fields->size.height / 4 - 130.f);
 		m_fields->posMenu->setScale(0.5);
-        m_fields->posMenu->setValue(gm->m_practicePos);
 		this->m_mainLayer->addChild(m_fields->posMenu);
+
+		auto panel = CCMenu::create();
+		//panel->setContentSize({0, 0});
+		panel->setPosition(ccp(-80.f, m_fields->size.height / 2 + 30.f));
+		panel->setContentSize(ccp(0.f, 0.f));
+		panel->setScale(0.35);
+		panel->setID("panel");
+		this->m_mainLayer->addChild(panel);
+
+		this->m_nameLabel = CCLabelBMFont::create(m_fields->id ? "P1 Move" : "Single Mode", "bigFont.fnt");
+		this->m_nameLabel->setPosition(ccp(m_fields->size.width / 2, 100.f));
+		this->m_nameLabel->setScale(0.7);
+		panel->addChild(this->m_nameLabel);
 
         // width menu
-		m_fields->widthMenu = InputSliderBundle::create("width", -1, 0, 400.f, 0, true);
-		m_fields->posMenu->setPosition(ccp(50.f, m_fields->size.height / 4 - 20.f));
-		m_fields->posMenu->setScale(0.5);
-        m_fields->posMenu->setValue(gm->m_practicePos);
-		this->m_mainLayer->addChild(m_fields->posMenu);
+		m_fields->widthMenu = InputSliderBundle::create("Width", 0, 400.f, 0);
+		m_fields->widthMenu->setPositionY(60.f);
+		m_fields->widthMenu->setTag(-1);
+		panel->addChild(m_fields->widthMenu);
 
+		// height menu
+		m_fields->heightMenu = InputSliderBundle::create("Height", 0, 400.f, 0);
+		m_fields->heightMenu->setPositionY(30.f);
+		m_fields->heightMenu->setTag(-5);
+		panel->addChild(m_fields->heightMenu);
+
+		// scale menu
+		m_fields->scaleMenu = InputSliderBundle::create("Scale", 0, 2, 2);
+		m_fields->scaleMenu->setPositionY(0.f);
+		m_fields->scaleMenu->setTag(-9);
+		panel->addChild(m_fields->scaleMenu);
+
+		// opacity menu
+		m_fields->opacityMenu = InputSliderBundle::create("Opacity", 0, 1, 2);
+		m_fields->opacityMenu->setPositionY(-30.f);
+		m_fields->opacityMenu->setTag(-13);
+		panel->addChild(m_fields->opacityMenu);
+
+		// deadzone menu
+		m_fields->deadzoneMenu = InputSliderBundle::create("Deadzone", 0, 10, 1);
+		m_fields->deadzoneMenu->setPositionY(-60.f);
+		m_fields->deadzoneMenu->setTag(-21);
+		panel->addChild(m_fields->deadzoneMenu);
+
+		// radius menu
+		m_fields->radiusMenu = InputSliderBundle::create("Radius", 0, 50, 1);
+		m_fields->radiusMenu->setPositionY(-90.f);
+		m_fields->radiusMenu->setTag(-19);
+		panel->addChild(m_fields->radiusMenu);
+
+		auto optMenu = CCMenu::create();
+		optMenu->setPosition(ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 130.f));
+		optMenu->setContentSize(ccp(200.f, 40.f));
+		optMenu->setScale(0.f);
+		optMenu->setID("official-options");
+		this->m_mainLayer->addChild(optMenu);
+
+		m_fields->modeLabel = CCLabelBMFont::create("Mode B", "bigFont.fnt");
+		m_fields->modeLabel->setScale(0.6);
+		m_fields->modeBtn = CCMenuItemSpriteExtra::create(m_fields->modeLabel, this, menu_selector(PlatformOptionsLayer::onMode));
+		m_fields->modeBtn->setTag(-17);
+		optMenu->addChildAtPosition(m_fields->modeBtn, Anchor::Center, ccp(-180.f, 0.f));
+
+		m_fields->snapLabel = CCLabelBMFont::create("Snap", "bigFont.fnt");
+		m_fields->snapLabel->setScale(0.6);
+		m_fields->snapBtn = CCMenuItemSpriteExtra::create(m_fields->snapLabel, this, menu_selector(PlatformOptionsLayer::onSnap0));
+		m_fields->snapBtn->setTag(-24);
+		optMenu->addChildAtPosition(m_fields->snapBtn, Anchor::Center, ccp(-60.f, 0.f));
+
+		m_fields->splitLabel = CCLabelBMFont::create("Split", "bigFont.fnt");
+		m_fields->splitLabel->setScale(0.6);
+		m_fields->splitBtn = CCMenuItemSpriteExtra::create(m_fields->splitLabel, this, menu_selector(PlatformOptionsLayer::onSplit));
+		m_fields->splitBtn->setTag(-27);
+		optMenu->addChildAtPosition(m_fields->splitBtn, Anchor::Center, ccp(60.f, 0.f));
+
+		m_fields->jumplLabel = CCLabelBMFont::create("Jump L", "bigFont.fnt");
+		m_fields->jumplLabel->setScale(0.6);
+		m_fields->jumplBtn = CCMenuItemSpriteExtra::create(m_fields->jumplLabel, this, menu_selector(PlatformOptionsLayer::onJumpL));
+		m_fields->jumplBtn->setTag(-26);
+		optMenu->addChildAtPosition(m_fields->jumplBtn, Anchor::Center, ccp(180.f, 0.f));
+
+		m_fields->symmetryLabel = CCLabelBMFont::create("Symmetry", "bigFont.fnt");
+		m_fields->symmetryLabel->setScale(0.6);
+		m_fields->symmetryBtn = CCMenuItemSpriteExtra::create(m_fields->symmetryLabel, this, menu_selector(PlatformOptionsLayer::onSymmetry));
+		optMenu->addChildAtPosition(m_fields->symmetryBtn, Anchor::Center, ccp(180.f, 0.f));
+
+		m_fields->jumplLabel->setColor(this->getValue(-26) ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
+		m_fields->symmetryLabel->setColor(Mod::get()->getSavedValue<bool>("symmetry") ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
+
+		m_fields->jumplBtn->setScale(m_fields->id == 0);
+		m_fields->symmetryBtn->setScale(m_fields->id != 0);
+
+		auto slotNode = CCNode::create();
+		slotNode->setID("save-slots");
+		slotNode->setPosition(this->m_fields->size / 2);
+		this->m_mainLayer->addChild(slotNode);
+
+		// slots
+		this->m_fields->slots[0] = SlotFrame::create(1);
+		this->m_fields->slots[0]->setPosition(ccp(0.f, 80.f));
+		slotNode->addChild(this->m_fields->slots[0]);
+		
+		this->m_fields->slots[1] = SlotFrame::create(2);
+		this->m_fields->slots[1]->setPosition(ccp(0.f, 0.f));
+		slotNode->addChild(this->m_fields->slots[1]);
+
+		this->m_fields->slots[2] = SlotFrame::create(3);
+		this->m_fields->slots[2]->setPosition(ccp(0.f, -80.f));
+		slotNode->addChild(this->m_fields->slots[2]);
+
+		// buttons below
+        std::map<int, std::pair<const char*, SEL_MenuHandler>> btnIndexes = {
+            {-120, {"optionsBtn.png"_spr, menu_selector(PlatformOptionsLayer::onOptions)}},			
+			{-80, {"dualBtn.png"_spr, menu_selector(PlatformOptionsLayer::onDual)}},
+			{-40, {"slotBtn.png"_spr, menu_selector(PlatformOptionsLayer::onBrowseSlot)}},
+            {0, {"fullscreenBtn.png"_spr, menu_selector(PlatformOptionsLayer::onPreview)}},
+            {40, {"snapBtn.png"_spr, menu_selector(PlatformOptionsLayer::onSnap)}},
+            {80, {"resetBtn.png"_spr, menu_selector(PlatformOptionsLayer::onResetNew)}},
+            {120, {"applyBtn.png"_spr, menu_selector(PlatformOptionsLayer::onClose)}}
+        };
+		
+        for (auto [k, v] : btnIndexes) {
+            auto spr = CCSprite::create(v.first);
+            spr->setScale(0.6);
+            auto btn = CCMenuItemSpriteExtra::create(spr, this, v.second);
+			btn->setPositionX(k);
+            this->m_buttonMenu->addChild(btn);
+
+			if (v.first == "dualBtn.png"_spr) {
+				this->m_fields->dualSpr = spr;
+				spr->setColor(m_fields->id ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
+			}
+
+			if (v.first == "snapBtn.png"_spr) {
+				this->m_fields->snapSpr = spr;
+				spr->setColor(Mod::get()->getSavedValue<bool>("snap") ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
+			}
+        }
+
+		this->m_buttonMenu->setPositionY(-5.f);
+		this->m_buttonMenu->setContentSize(ccp(0.f, 0.f));
+		this->m_buttonMenu->setScale(0.5);
+        this->m_buttonMenu->setID("button-menu");
+
+		// value
+		this->refreshValue();
+		// transition
+		this->Transition(true, true);
 
 		return true;
 	}
+
 	ListenerResult handleSignal(Signal* event) {
-		//log::debug("signal handled!");
-		// opacity
-		if (event->tag == -29) {
-            this->valueDidChange(-29, event->value);
-			//gm->m_practiceOpacity = event->value;
-			//this->m_fields->map->alphaNode(event->value * 255);
-			//log::debug("opacity is set to {}", event->value);
+		//log::debug("handle signal {} {}", event->tag, event->value);
+		// escape from fullscreen preview
+		if (event->tag == -100) {
+			if (event->value == -514 && !this->m_fields->slpage)
+				return ListenerResult::Stop;
+			// will drag a node
+			if (event->value > 0) {
+				// dual mode only
+				// should switch ui info to the dragged node
+				if (this->m_fields->id) {
+					this->m_fields->id = event->value;
+					//log::info("switch id = {}", m_fields->id);
+					bool p2 = event->value == 2 || event->value == 4;
+					this->m_nameLabel->setString(fmt::format("P{} {}", p2 ? "2" : "1", event->value < 3 ? "Move" : "Jump").c_str());
+					this->refreshValue();
+					// input slider bundles tag
+					this->m_fields->widthMenu->setTag(-event->value);
+					this->m_fields->heightMenu->setTag(-event->value - 4);
+					this->m_fields->scaleMenu->setTag(-event->value - 8);
+					this->m_fields->opacityMenu->setTag(-event->value - 12);
+					this->m_fields->deadzoneMenu->setTag(-int(p2) - 21);
+					this->m_fields->radiusMenu->setTag(-int(p2) - 19);
+
+					this->m_fields->deadzoneMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, event->value < 3)));
+					this->m_fields->radiusMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, event->value < 3)));
+					// togglers
+					this->m_fields->modeBtn->setTag(-17 - p2);
+					this->m_fields->snapBtn->setTag(-24 - p2);
+					this->m_fields->splitBtn->setTag(-27 - p2);
+					// buttons
+					this->m_fields->modeBtn->setEnabled(event->value < 3);
+					this->m_fields->snapBtn->setEnabled(event->value < 3);
+					this->m_fields->splitBtn->setEnabled(event->value < 3);
+					if (event->value < 3) {
+						this->m_fields->modeLabel->runAction(this->m_fields->config[m_fields->id]->m_modeB ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+						this->m_fields->snapLabel->runAction(this->m_fields->config[m_fields->id]->m_snap ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+						this->m_fields->splitLabel->runAction(this->m_fields->config[m_fields->id]->m_split ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+					} else {
+						this->m_fields->modeLabel->runAction(CCTintTo::create(0.4, 128, 128, 128));
+						this->m_fields->snapLabel->runAction(CCTintTo::create(0.4, 128, 128, 128));
+						this->m_fields->splitLabel->runAction(CCTintTo::create(0.4, 128, 128, 128));
+					}
+				}
+			}
+			// escape fullscreen preview
+			else {
+				//log::debug("escape fullscreen preview {} {}", event->value, this->m_fields->slpage);
+
+				if (event->value == -114 && !this->m_fields->slpage)
+					this->Transition(true, false);
+				else if (event->value == -514 && this->m_fields->slpage)
+					this->TransitionSlots(true, true);
+			}
 		}
 		// x pos
 		else if (event->tag == 114) {
-            //log::debug("pos x is set to {}", event->value);
-			GameManager::sharedState()->m_practicePos.x = event->value;
-			this->m_fields->map->placeNode(ccp(event->value, this->m_practiceNode->getPositionY()));
+            auto m = this->m_fields->map;
+			this->m_fields->config[m_fields->id]->m_position.x = event->value;
+			m->placeNode(m_fields->id, ccp(event->value, m->getChildByTag(m_fields->id)->getPositionY()), 0.2);
+			// symmetric dual
+			if (!m_fields->id || !Mod::get()->getSavedValue<bool>("symmetry"))
+				return ListenerResult::Stop;
+			auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
+			this->m_fields->config[mirror]->m_position = ccp(m_fields->size.width - event->value, this->m_fields->config[m_fields->id]->m_position.y);
+			this->m_fields->map->placeNode(mirror, ccp(m_fields->size.width - event->value, this->m_fields->config[m_fields->id]->m_position.y), 0.2);
 		}
 		// y pos
 		else if (event->tag == 514) {
-            //log::debug("pos y is set to {}", event->value);
-			GameManager::sharedState()->m_practicePos.y = event->value;	
-			this->m_fields->map->placeNode(ccp(this->m_practiceNode->getPositionX(), event->value));
+            auto m = this->m_fields->map;
+			this->m_fields->config[m_fields->id]->m_position.y = event->value;
+			m->placeNode(m_fields->id, ccp(m->getChildByTag(m_fields->id)->getPositionX(), event->value), 0.2);
+			// symmetric dual
+			if (!m_fields->id || !Mod::get()->getSavedValue<bool>("symmetry"))
+				return ListenerResult::Stop;
+			auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
+			this->m_fields->config[mirror]->m_position = ccp(this->m_fields->config[m_fields->id]->m_position.x, event->value);
+			this->m_fields->map->placeNode(mirror, ccp(this->m_fields->config[m_fields->id]->m_position.x, event->value), 0.2);
 		}
+		// launch slot preview
+		else if (event->tag == 1919) {
+			if (!event->value) {
+				this->TransitionSlots(true, true);
+				return ListenerResult::Stop;
+			}
+			//auto slot = event->value ? event->value : this->m_fields->slpage;
+			this->m_fields->slpage = event->value;
+			auto slot = static_cast<SlotFrame*>(this->m_mainLayer->getChildByID("save-slots")->getChildByTag(event->value));
+			//log::debug("signal 1919 id = {}", m_fields->id);
+			if (this->m_fields->id) {
+				this->m_fields->preview->updateState(1, slot->p1m);	
+				this->m_fields->preview->updateState(2, slot->p2m);	
+				this->m_fields->preview->updateState(3, slot->p1j);	
+				this->m_fields->preview->updateState(4, slot->p2j);	
+			} else
+				this->m_fields->preview->updateState(0, slot->p1m);	
 
-		// escape from fullscreen preview
-		else if (event->tag == -100) {
-			if (!event->value && this->m_fields->map->getScale() == 1) {
-				this->Transition(true, false);
-				m_fields->opl->setVisible(true);				
+			this->TransitionSlots(false, true);
+		}
+		// load a slot
+		else if (event->tag == 810) {
+			this->refreshValue();
+			if (this->m_fields->slpage > 0)
+				this->TransitionSlots(true, true);
+			// notify
+			FLAlertLayer::create("Loaded!", fmt::format("Config inside Slot {} has been applied as current.", event->value), "Nice")->show();
+		}
+		else if (event->tag == 94) {
+		if (this->m_fields->id) {
+			this->m_fields->preview->updateState(1, gm->m_dpad2, 0.2);
+			this->m_fields->preview->updateState(2, gm->m_dpad3, 0.2);
+			this->m_fields->preview->updateState(3, gm->m_dpad4, 0.2);
+			this->m_fields->preview->updateState(4, gm->m_dpad5, 0.2);
+		} else
+			this->m_fields->preview->updateState(0, gm->m_dpad1, 0.2);
+		}
+		// opacity and more
+		else if (event->tag < 0) {
+			if (event->tag >= -4 && event->tag <= -1) {
+				this->m_fields->config[m_fields->id]->m_width = event->value;
+				this->valueDidChange(event->tag, event->value);
+				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
+					auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
+					this->m_fields->config[mirror]->m_width = event->value;
+					this->valueDidChange(event->tag > -3 ? -3 - event->tag : -7 - event->tag, event->value);			
+				}
+			}
+			if (event->tag >= -8 && event->tag <= -5) {
+				this->m_fields->config[m_fields->id]->m_height = event->value;
+				this->valueDidChange(event->tag, event->value);
+				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
+					auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
+					this->m_fields->config[mirror]->m_height = event->value;
+					this->valueDidChange(event->tag > -7 ? -11 - event->tag : -15 - event->tag, event->value);
+				}
+			}
+			if (event->tag >= -12 && event->tag <= -9) {
+				this->m_fields->config[m_fields->id]->m_scale = event->value;
+				this->m_fields->map->scaleNode(m_fields->id, event->value, 0.2);
+				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
+					auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
+					this->m_fields->config[mirror]->m_scale = event->value;
+					this->m_fields->map->scaleNode(mirror, event->value, 0.2);
+				}
+			}
+			if (event->tag >= -16 && event->tag <= -13) {
+				this->m_fields->config[m_fields->id]->m_opacity = 255 * event->value;
+				this->m_fields->map->alphaNode(m_fields->id, 255 * event->value, 0.2);
+				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
+					auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
+					this->m_fields->config[mirror]->m_opacity = 255 * event->value;
+					this->m_fields->map->alphaNode(mirror, 255 * event->value, 0.2);
+				}
+			}
+			if (event->tag == -21 || event->tag == -22) {
+				this->m_fields->config[m_fields->id]->m_deadzone = event->value;
+				this->valueDidChange(event->tag, event->value);
+				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
+					auto mirror = 3 - m_fields->id;
+					this->m_fields->config[mirror]->m_deadzone = event->value;
+					this->valueDidChange(-43 - event->tag, event->value);
+				}
+			}
+			if (event->tag == -19 || event->tag == -20) {
+				this->m_fields->config[m_fields->id]->m_radius = event->value;
+				this->m_fields->map->radiusNode(m_fields->id, event->value, 0.2);
+				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
+					auto mirror = 3 - m_fields->id;
+					this->m_fields->config[mirror]->m_radius = event->value;
+					this->m_fields->map->radiusNode(mirror, event->value, 0.2);
+				}
 			}
 		}
 
 		return ListenerResult::Stop;		
 	}
 
-	//
-	void valueDidChange(int i, float f) override {
-		UIOptionsLayer::valueDidChange(i, f);
-		log::debug("int = {}, float = {}", i, f);
+	void valueDidChange(int p, float val) override {
+		UIOptionsLayer::valueDidChange(p, val);
+		//log::debug("value did change p = {} val = {}", p, val);
+	}
+	
+	// transition for main menu
+	// whole means enter or exit the whole ui config menu
+	void Transition(bool in, bool whole) {
+		this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, in * Mod::get()->getSettingValue<int64_t>("bgopacity"))));
+
+		if (whole) {
+			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.25 * (in + 1))));
+			m_fields->map->helpTransition(in);
+		} else {
+			this->m_fields->inprev = !in;
+			m_fields->opl->setVisible(in);
+			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 1 - 0.5 * in)));
+			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(100.f * in, 30.f * in))));
+		}
+
+		m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.35 * (in + 1))));
+		m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
+
+		m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (in + 1))));
+		m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 110.f))));
+
+		this->m_mainLayer->getChildByID("panel")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.7 * in)));
+
+		this->m_mainLayer->getChildByID("official-options")->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 80.f))));
+		this->m_mainLayer->getChildByID("official-options")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, in)));
+
+		m_buttonMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (in + 1))));
+		m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 45.f))));
 	}
 
+	// transition for slots
+	void TransitionSlots(bool in, bool prev) {
+
+		// go to preview
+		if (prev) {
+			this->m_fields->inprev = !in;
+			this->m_fields->preview->setTouchEnabled(!in);
+			//m_fields->opl->setVisible(in);
+			m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.35 * (in + 1))));
+			m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
+
+			for (auto slot : this->m_fields->slots) {
+				if (in)
+					slot->resume();
+				if (slot->getTag() == this->m_fields->slpage)
+					continue;					
+
+				slot->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(0, 80.f * (2 - slot->getTag()) + 120.f * (!in) / (slot->getTag() - this->m_fields->slpage))))); // what the fuck?
+				slot->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, in)));
+				slot->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, 255 * in)));
+			}
+
+			this->m_fields->preview->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (!in))));
+			this->m_fields->preview->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(0.f, 30.f * !in))));
+			this->m_fields->preview->helpTransition(!in);
+
+			if (in) 
+				this->m_fields->slpage = -1;
+		}
+		// from main menu
+		else {
+			this->m_fields->map->setTouchEnabled(!in);
+
+			if (in) 
+				this->m_fields->slpage = -1;
+			else {
+				this->m_fields->slpage = 0;
+				if (this->m_fields->id) {
+					this->m_fields->map->updateState(1, gm->m_dpad2);
+					this->m_fields->map->updateState(2, gm->m_dpad3);
+					this->m_fields->map->updateState(3, gm->m_dpad4);
+					this->m_fields->map->updateState(4, gm->m_dpad5);
+				} else
+					this->m_fields->map->updateState(0, gm->m_dpad1);	
+			}
+
+			for (auto slot : this->m_fields->slots) {
+				slot->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, in)));
+				slot->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, 255 * in)));
+			}
+
+			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.25 * (!in + 1))));
+			m_fields->map->helpTransition(!in);
+
+			m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (!in + 1))));
+			m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + !in * 110.f))));
+
+			this->m_mainLayer->getChildByID("panel")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.7 * !in)));
+
+			this->m_mainLayer->getChildByID("official-options")->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + !in * 80.f))));
+			this->m_mainLayer->getChildByID("official-options")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, !in)));
+
+			m_buttonMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (!in + 1))));
+			m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + !in * 45.f))));
+		}
+
+	}
 
 	bool ccTouchBegan(CCTouch* touch, CCEvent* event) override {
 		return SetupTriggerPopup::ccTouchBegan(touch, event);
@@ -132,29 +548,210 @@ class $modify(UIOptionsLayer) {
 	void ccTouchMoved(CCTouch* touch, CCEvent* event) override {
 		
 	}
+
 	void ccTouchEnded(CCTouch* touch, CCEvent* event) override {
 
 	}
+
+	// refresh status in menu, will NOT affect the preview frame
+	// called when: dual switch, loaded from a slot
+	void refreshValue() {
+		m_fields->posMenu->setValue(this->m_fields->config[m_fields->id]->m_position);
+		m_fields->widthMenu->setValue(this->m_fields->config[m_fields->id]->m_width);
+		m_fields->heightMenu->setValue(this->m_fields->config[m_fields->id]->m_height);
+		m_fields->scaleMenu->setValue(this->m_fields->config[m_fields->id]->m_scale);
+		m_fields->opacityMenu->setValue(float(this->m_fields->config[m_fields->id]->m_opacity) / 255);
+		m_fields->deadzoneMenu->setValue(this->m_fields->config[m_fields->id]->m_deadzone);
+		m_fields->radiusMenu->setValue(this->m_fields->config[m_fields->id]->m_radius);
+
+		m_fields->modeLabel->setColor(this->m_fields->config[m_fields->id]->m_modeB ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
+		m_fields->snapLabel->setColor(this->m_fields->config[m_fields->id]->m_snap ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
+		m_fields->splitLabel->setColor(this->m_fields->config[m_fields->id]->m_split ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
+	}
+
+	// switch dual mode
+	void onDual(CCObject*) {
+		// switch and save
+		this->m_fields->id = !this->m_fields->id;
+		Mod::get()->setSavedValue("dual", bool(this->m_fields->id));
+		// tint button
+		this->m_fields->dualSpr->runAction(this->m_fields->id ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+		// title label
+		this->m_nameLabel->setString(m_fields->id ? "P1 Move" : "Single Mode");
+		// input slider bundles tag
+		this->m_fields->widthMenu->setTag(-1);
+		this->m_fields->heightMenu->setTag(-5);
+		this->m_fields->scaleMenu->setTag(-9);
+		this->m_fields->opacityMenu->setTag(-13);
+		this->m_fields->deadzoneMenu->setTag(-21);
+		this->m_fields->radiusMenu->setTag(-19);
+		// togglers
+		this->m_fields->modeBtn->setTag(-17);
+		this->m_fields->snapBtn->setTag(-24);
+		this->m_fields->splitBtn->setTag(-27);
+		// official options
+		m_fields->jumplBtn->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, m_fields->id == 0)));
+		m_fields->symmetryBtn->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, m_fields->id != 0)));
+		// ui values
+		this->refreshValue();
+		// map
+		this->m_fields->map->switchDual();
+		this->m_fields->preview->switchDual();
+	}
 	
+	// switch dual mode
+	void onMode(CCObject*) {
+		int t = -17 - (m_fields->id == 2);
+		this->m_fields->config[m_fields->map->getCurrent()]->m_modeB = !this->getValue(t);
+		this->valueDidChange(t, !this->getValue(t));
+		this->m_fields->modeLabel->runAction(this->getValue(t) ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+		// dual symmetry
+		if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
+			auto mirror = 3 - m_fields->id;
+			this->m_fields->config[mirror]->m_modeB = this->getValue(t);
+			this->valueDidChange(-35 - t, this->getValue(t));
+		}
+	}
+
+	// switch robtop's snap option
+	void onSnap0(CCObject*) {
+		int t = -24 - (m_fields->id == 2);
+		this->valueDidChange(t, !this->getValue(t));
+		this->m_fields->snapLabel->runAction(this->getValue(t) ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+		// dual symmetry
+		if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
+			auto mirror = 3 - m_fields->id;
+			this->m_fields->config[mirror]->m_snap = this->getValue(t);
+			this->valueDidChange(-49 - t, this->getValue(t));
+		}
+	}
+
+	// switch split option
+	void onSplit(CCObject*) {
+		int t = -27 - (m_fields->id == 2);
+		this->valueDidChange(t, !this->getValue(t));
+		this->m_fields->splitLabel->runAction(this->getValue(t) ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+		// dual symmetry
+		if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
+			auto mirror = 3 - m_fields->id;
+			this->m_fields->config[mirror]->m_split = this->getValue(t);
+			this->valueDidChange(-55 - t, this->getValue(t));
+		}
+	}
+
+	// switch jumpL option (single mode only)
+	void onJumpL(CCObject*) {
+		gm->setGameVariable("0113", !gm->getGameVariable("0113"));
+		//this->valueDidChange(-26, !this->getValue(-26));
+		this->m_fields->jumplLabel->runAction(gm->getGameVariable("0113") ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+	}
+	
+	// always symmetric dual ui status (dual mode only)
+	void onSymmetry(CCObject*) {
+		Mod::get()->setSavedValue("symmetry", !Mod::get()->getSavedValue<bool>("symmetry"));
+		m_fields->symmetryLabel->runAction(Mod::get()->getSavedValue<bool>("symmetry") ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+		// do something
+	}
+	
+	// options
     void onOptions(CCObject*) {
 		geode::openSettingsPopup(Mod::get(), false);
 	}
 
+	// preview
 	void onPreview(CCObject*) {
-		FLAlertLayer::create("Geode", "Hello from my custom mod!", "OK")->show();
+		if (this->m_fields->slpage || this->m_fields->inprev)
+			return;
+		this->Transition(false, false);
 	}
 
-	void onSnap(CCObject*) { }
+	// snap (my own grid snap)
+	void onSnap(CCObject*) {
+        bool on = Mod::get()->getSavedValue<bool>("snap");
+        Mod::get()->setSavedValue("snap", !on);
+		this->m_fields->map->setGridVisibility(!on);
+		// tint color
+		this->m_fields->snapSpr->runAction(CCTintTo::create(0.4, 128 + 127 * on, 255 - 127 * on, 128));
+	}
 
-	void onReset(CCObject*) { }
+	void onResetNew(CCObject*) {
+		
+		gm->m_dpad1 = UIButtonConfig{
+			.m_width = 280, .m_height = 120, .m_deadzone = 0.f, .m_scale = 1.f, .m_opacity = 255, .m_radius = 10.f, .m_modeB = false,
+			.m_snap = false, .m_position = ccp(95.f, 36.f), .m_oneButton = false, .m_player2 = false, .m_split = false
+		};
+		gm->m_dpad2 = UIButtonConfig{
+			.m_width = 280, .m_height = 120, .m_deadzone = 0.f, .m_scale = 1.f, .m_opacity = 255, .m_radius = 10.f, .m_modeB = false,
+			.m_snap = false, .m_position = ccp(95.f, 36.f), .m_oneButton = false, .m_player2 = false, .m_split = false
+		};
+		gm->m_dpad3 = UIButtonConfig{
+			.m_width = 280, .m_height = 120, .m_deadzone = 0.f, .m_scale = 1.f, .m_opacity = 255, .m_radius = 10.f, .m_modeB = false,
+			.m_snap = false, .m_position = ccp(m_fields->size.width - 95.f, 36.f), .m_oneButton = false, .m_player2 = true, .m_split = false
+		};
+		gm->m_dpad4 = UIButtonConfig{
+			.m_width = 200, .m_height = 200, .m_scale = 1.f, .m_opacity = 255, .m_position = ccp(95.f, 196.f), .m_oneButton = true, .m_player2 = false
+		};
+		gm->m_dpad5 = UIButtonConfig{
+			.m_width = 200, .m_height = 200, .m_scale = 1.f, .m_opacity = 255, .m_position = ccp(m_fields->size.width - 95.f, 196.f), .m_oneButton = true, .m_player2 = true
+		};
 
-	void onSaveLoad(CCObject*) { }
+		this->refreshValue();
+		// dual mode
+		if (this->m_fields->id) {
+			this->m_fields->map->updateState(1, gm->m_dpad2, 0.2);
+			this->m_fields->map->updateState(2, gm->m_dpad3, 0.2);
+			this->m_fields->map->updateState(3, gm->m_dpad4, 0.2);
+			this->m_fields->map->updateState(4, gm->m_dpad5, 0.2);
+		} else
+			this->m_fields->map->updateState(0, gm->m_dpad1, 0.2);
+	}
+
+	void onBrowseSlot(CCObject*) {
+		if (this->m_fields->slpage || this->m_fields->inprev)
+			return;
+		this->m_fields->slpage = -1;
+		this->m_fields->titleLabel->setString("Browse Layouts");
+
+		for (auto slot : this->m_fields->slots)
+			slot->setDualStatus(this->m_fields->id);
+		this->TransitionSlots(true, false);
+	}
 
 	void onClose(CCObject* obj) override {
-		UIOptionsLayer::onClose(obj);
+		//log::debug("inprev = {} slpage = {}", this->m_fields->inprev, this->m_fields->slpage);
+		if (this->m_fields->inprev) {
+			if (this->m_fields->slpage)
+				this->TransitionSlots(true, true);
+			else 
+				this->Transition(true, false);
+		}
+		else if (this->m_fields->slpage)
+			this->TransitionSlots(this->m_fields->slpage > 0, this->m_fields->slpage > 0);
+		else
+			this->runAction(CCSequence::create(
+				CallFuncExt::create([this] () { this->Transition(false, true); }),
+				CCDelayTime::create(0.3),
+				CallFuncExt::create([this, obj] () { this->SetupTriggerPopup::onClose(obj); }),
+				nullptr
+			));
 	}
 
 	void keyBackClicked() override {
-		UIOptionsLayer::keyBackClicked();
+		//log::debug("inprev = {} slpage = {}", this->m_fields->inprev, this->m_fields->slpage);
+		if (this->m_fields->inprev) {
+			if (this->m_fields->slpage)
+				this->TransitionSlots(true, true);
+			else 
+				this->Transition(true, false);
+		}
+		else if (this->m_fields->slpage)
+			this->TransitionSlots(this->m_fields->slpage > 0, this->m_fields->slpage > 0);
+		else
+			this->runAction(CCSequence::create(
+				CallFuncExt::create([this] () { this->Transition(false, true); }),
+				CCDelayTime::create(0.3),
+				CallFuncExt::create([this] () { this->SetupTriggerPopup::keyBackClicked(); }),
+				nullptr
+			));
 	}
 };

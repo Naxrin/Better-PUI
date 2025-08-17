@@ -17,6 +17,9 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		// several slider menus
 		InputSliderBundle* opacityMenu;
 
+		// button sprites
+		CCSprite* snapSpr;
+
 		// map
 		PracticePreviewFrame* map;
 
@@ -44,9 +47,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		m_fields->opl = CCScene::get()->getChildByType<GameOptionsLayer>(0);
 
 		// bg color
-		this->setColor(Mod::get()->getSettingValue<ccColor3B>("bgcolor"));
+		this->setColor(ccc3(0, 0, 0));
 		this->setOpacity(0);
-		
 
 		// hide the frame
 		this->m_mainLayer->getChildByTag(1)->setVisible(false);
@@ -66,47 +68,49 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		this->m_mainLayer->addChild(m_fields->map);
 
 		// relocate the practice node
-		this->m_practiceNode = m_fields->map->getTargetNode();
+		this->m_practiceNode = m_fields->map->getChildByID("target");
 
 		// pos menu
 		m_fields->posMenu = PosInputBundle::create();
-		m_fields->posMenu->setPositionY(m_fields->size.height / 4 - 20.f);
+		m_fields->posMenu->setPositionY(m_fields->size.height / 4 - 130.f);
 		m_fields->posMenu->setScale(0.5);
         m_fields->posMenu->setValue(gm->m_practicePos);
 		this->m_mainLayer->addChild(m_fields->posMenu);
 
 		// opacity menu
-		m_fields->opacityMenu = InputSliderBundle::create("Opacity", -29, 0, 1, 2, true);
+		m_fields->opacityMenu = InputSliderBundle::create("Opacity", 0, 1, 2);
 		m_fields->opacityMenu->setPositionY(m_fields->size.height / 4 - 50.f);
 		m_fields->opacityMenu->setScale(0.5);
+		m_fields->opacityMenu->setTag(1);
         m_fields->opacityMenu->setValue(gm->m_practiceOpacity);
 		this->m_mainLayer->addChild(m_fields->opacityMenu);
 
 		// buttons below
-        std::map<const char*, SEL_MenuHandler> btnIndexes = {
-            {"optionsBtn.png"_spr, menu_selector(PracticeOptionsLayer::onOptions)},
-            {"fullscreenBtn.png"_spr, menu_selector(PracticeOptionsLayer::onPreview)},
-            {"snapBtn.png"_spr, menu_selector(PracticeOptionsLayer::onSnap)},
-            {"resetBtn.png"_spr, menu_selector(PracticeOptionsLayer::onReset)},
-            {"applyBtn.png"_spr, menu_selector(PracticeOptionsLayer::onClose)}
+        std::map<int, std::pair<const char*, SEL_MenuHandler>> btnIndexes = {
+			{-80, {"optionsBtn.png"_spr, menu_selector(PracticeOptionsLayer::onOptions)}},
+            {-40, {"fullscreenBtn.png"_spr, menu_selector(PracticeOptionsLayer::onPreview)}},
+            {0, {"snapBtn.png"_spr, menu_selector(PracticeOptionsLayer::onSnap)}},
+            {40, {"resetBtn.png"_spr, menu_selector(PracticeOptionsLayer::onResetNew)}},
+            {80, {"applyBtn.png"_spr, menu_selector(PracticeOptionsLayer::onClose)}}
         };
 
         for (auto [k, v] : btnIndexes) {
-            auto spr = CCSprite::create(k);
+            auto spr = CCSprite::create(v.first);
             spr->setScale(0.6);
-            auto btn = CCMenuItemSpriteExtra::create(spr, this, v);
+            auto btn = CCMenuItemSpriteExtra::create(spr, this, v.second);
+			btn->setPositionX(k);
             this->m_buttonMenu->addChild(btn);
+
+			if (v.first == "snapBtn.png"_spr) {
+				this->m_fields->snapSpr = spr;
+				spr->setColor(Mod::get()->getSavedValue<bool>("snap") ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
+			}
         }
 
-		m_buttonMenu->setPositionY(-5.f);
-		m_buttonMenu->setScale(0.5);
-        m_buttonMenu->setID("button-menu");
-
-        this->m_buttonMenu->setLayout(
-            RowLayout::create()
-                ->setGap(15.f)
-                ->setAxisAlignment(AxisAlignment::Center)
-        );
+		this->m_buttonMenu->setPositionY(-5.f);
+		this->m_buttonMenu->setContentSize(ccp(0.f, 0.f));
+		this->m_buttonMenu->setScale(0.5);
+        this->m_buttonMenu->setID("button-menu");
 
 		this->Transition(true, true);
 		m_fields->map->helpTransition(true);
@@ -115,36 +119,30 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	}
 
 	ListenerResult handleSignal(Signal* event) {
-		//log::debug("signal handled!");
-		// opacity
-		if (event->tag == -29) {
-            this->valueDidChange(-29, event->value);
-			//gm->m_practiceOpacity = event->value;
-			//this->m_fields->map->alphaNode(event->value * 255);
-			//log::debug("opacity is set to {}", event->value);
-		}
-		// x pos
-		else if (event->tag == 114) {
-            //log::debug("pos x is set to {}", event->value);
-			GameManager::sharedState()->m_practicePos.x = event->value;
-			this->m_fields->map->placeNode(ccp(event->value, this->m_practiceNode->getPositionY()));
-		}
-		// y pos
-		else if (event->tag == 514) {
-            //log::debug("pos y is set to {}", event->value);
-			GameManager::sharedState()->m_practicePos.y = event->value;	
-			this->m_fields->map->placeNode(ccp(this->m_practiceNode->getPositionX(), event->value));
-		}
-
 		// escape from fullscreen preview
-		else if (event->tag == -100) {
+		if (event->tag == -100) {
 			if (!event->value && this->m_fields->map->getScale() == 1) {
 				this->Transition(true, false);
 				m_fields->opl->setVisible(true);				
 			}
 		}
-
-		return ListenerResult::Stop;		
+		// x pos
+		else if (event->tag == 114) {
+            //log::debug("pos x is set to {}", event->value);
+			gm->m_practicePos.x = event->value;
+			this->m_fields->map->placeNode(ccp(event->value, this->m_practiceNode->getPositionY()));
+		}
+		// y pos
+		else if (event->tag == 514) {
+            //log::debug("pos y is set to {}", event->value);
+			gm->m_practicePos.y = event->value;	
+			this->m_fields->map->placeNode(ccp(this->m_practiceNode->getPositionX(), event->value));
+		}		
+		// opacity
+		else if (event->tag == 1) {
+            this->valueDidChange(-29, event->value);
+		}
+		return ListenerResult::Stop;
 	}
 
 	void Transition(bool in, bool whole) {
@@ -193,9 +191,11 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
         bool on = Mod::get()->getSavedValue<bool>("snap");
         Mod::get()->setSavedValue("snap", !on);
 		this->m_fields->map->setGridVisibility(!on);
+		// tint color
+		this->m_fields->snapSpr->runAction(CCTintTo::create(0.2, 128 + 127 * on, 255 - 127 * on, 128));
 	}
 
-	void onReset(CCObject* obj) {
+	void onResetNew(CCObject* obj) {
 		auto defpos = ccp(m_fields->size.width / 2, 40.f);
 		gm->m_practicePos = defpos;
 		gm->m_practiceOpacity = 1;
