@@ -380,11 +380,15 @@ void PlatformPreviewFrame::ccTouchMoved(CCTouch* touch, CCEvent* event) {
 }
 
 void PlatformPreviewFrame::ccTouchEnded(CCTouch* touch, CCEvent* event) {
-    if (!Mod::get()->getSavedValue<bool>("snap"))
+    auto delta = touch->getDelta();
+    auto dest = this->getChildByTag(current)->getPosition() + delta / this->getScale();
+    if (!Mod::get()->getSavedValue<bool>("snap")) {
+        this->getChildByTag(current)->setPosition(dest);
+        PosSignal(true, dest).post();
         return;
-    auto t = this->convertTouchToNodeSpace(touch);
+    }
     auto c = this->getContentSize() / 2;
-    auto dest = ccp(c.width + 30 * round((t.x - c.width) / 30), c.height + 30 * round((t.y - c.height) / 30));
+    dest = ccp(c.width + 30 * round((dest.x - c.width) / 30), c.height + 30 * round((dest.y - c.height) / 30));
     this->getChildByTag(current)->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, dest)));
     PosSignal(true, dest).post();
 }
@@ -670,8 +674,7 @@ void SlotFrame::setDualStatus(bool dual) {
         this->dual ? &gm->m_dpadLayoutDual2 : &gm->m_dpadLayout2,
         this->dual ? &gm->m_dpadLayoutDual3 : &gm->m_dpadLayout3
     };
-    this->raw = static_cast<std::string*>(s[this->getTag() - 1]);
-
+    this->raw = s[this->getTag() - 1];
     this->parse();
 
     this->prevBtn->setEnabled(real);

@@ -202,7 +202,7 @@ protected:
     // really has data or is empty
     bool real = true;
     // raw string of this config
-    std::string* raw;
+    gd::string* raw;
     // screen size
     const CCSize size = CCDirector::sharedDirector()->getWinSize();
     // bg
