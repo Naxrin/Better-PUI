@@ -665,12 +665,12 @@ void SlotFrame::setDualStatus(bool dual) {
         this->jumpL = false;
 
     // refresh raw string pointer
-    std::string* s[3] = {
-        this->dual ? &gm->m_dpadLayoutDual1 : &gm->m_dpadLayout1,
-        this->dual ? &gm->m_dpadLayoutDual2 : &gm->m_dpadLayout2,
-        this->dual ? &gm->m_dpadLayoutDual3 : &gm->m_dpadLayout3
+    gd::string s[3] = {
+        this->dual ? gm->m_dpadLayoutDual1 : gm->m_dpadLayout1,
+        this->dual ? gm->m_dpadLayoutDual2 : gm->m_dpadLayout2,
+        this->dual ? gm->m_dpadLayoutDual3 : gm->m_dpadLayout3
     };
-    this->raw = s[this->getTag() - 1];
+    *this->raw = fmt::format("{}", s[this->getTag() - 1]);
 
     this->parse();
 
