@@ -55,6 +55,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 
 		this->m_fields->radioPos = EventListener<EventFilter<PosSignal>>(
             [this](PosSignal* event) -> ListenerResult {
+				log::debug("pos signal {}", event->tag);
                 this->m_fields->posMenu->setValue(event->pos);
                 this->m_fields->config[m_fields->id]->m_position = event->pos;
 				// symmetric dual
@@ -262,7 +263,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 	}
 
 	ListenerResult handleSignal(Signal* event) {
-		//log::debug("handle signal {} {}", event->tag, event->value);
+		log::debug("handle signal {} {}", event->tag, event->value);
 		// escape from fullscreen preview
 		if (event->tag == -100) {
 			if (event->value == -514 && !this->m_fields->slpage)
@@ -310,9 +311,9 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			else {
 				//log::debug("escape fullscreen preview {} {}", event->value, this->m_fields->slpage);
 
-				if (event->value == -114 && !this->m_fields->slpage)
+				if (event->value == -114 && !this->m_fields->slpage && this->m_fields->inprev)
 					this->Transition(true, false);
-				else if (event->value == -514 && this->m_fields->slpage)
+				else if (event->value == -514 && this->m_fields->slpage && this->m_fields->inprev)
 					this->TransitionSlots(true, true);
 			}
 		}
@@ -753,5 +754,13 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 				CallFuncExt::create([this] () { this->SetupTriggerPopup::keyBackClicked(); }),
 				nullptr
 			));
+	}
+};
+
+#include <Geode/modify/CCTextInputNode.hpp>
+class $modify(CCTextInputNode) {
+	void keyboardWillShow(CCIMEKeyboardNotificationInfo& p) override {
+		CCTextInputNode::keyboardWillShow(p);
+		log::debug("keyboard will show!!!");
 	}
 };

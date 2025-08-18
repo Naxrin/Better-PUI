@@ -331,16 +331,17 @@ bool PlatformPreviewFrame::init(bool preview) {
 bool PlatformPreviewFrame::ccTouchBegan(CCTouch* touch, CCEvent* event) {
     if (!this->activate)
         return false;
-    else if (this->preview) {
-        auto p = this->convertTouchToNodeSpace(touch);
+
+    auto t = this->convertTouchToNodeSpace(touch);
+    
+    if (this->preview) {
         auto s = this->getContentSize() / 2;
-        if (p.x < s.width - 110 || p.x > s.width + 110 || p.y > s.height - 232)
+        if (t.x < s.width - 110 || t.x > s.width + 110 || t.y > s.height - 232)
             Signal(-100, -514).post();
         return false;
     }
 
     // not preview
-    auto t = this->convertTouchToNodeSpace(touch);
     // single mode
     if (!this->current) {
         auto r = p1mNode->m_rect;
@@ -368,7 +369,8 @@ bool PlatformPreviewFrame::ccTouchBegan(CCTouch* touch, CCEvent* event) {
             return true;
         }
     }
-    Signal(-100, -114).post();
+    if (this->boundingBox().containsPoint(t))
+        Signal(-100, -114).post();
     return false;
 }
 
@@ -626,17 +628,17 @@ void SlotFrame::refreshDescLabel() {
     this->descLabel->removeFromParentAndCleanup(true);
 
     auto str = this->dual ? fmt::format(
-        "P1M pos={}, {} w={} h={} s={} opacity={} modeb={} dz={} radius={} snap={} split={}\n"
-        "P2M pos={}, {} w={} h={} s={} opacity={} modeb={} dz={} radius={} snap={} split={}\n"
-        "P1J pos={}, {} w={} h={} s={} opacity={}\n"
-        "P1J pos={}, {} w={} h={} s={} opacity={}",
+        "P1M p={},{} w={} h={} s={} o={} m={} dz={} r={} sn={} sp={}\n"
+        "P2M p={},{} w={} h={} s={} o={} m={} dz={} r={} sn={} sp={}\n"
+        "P1J p={},{} w={} h={} s={} o={}\n"
+        "P1J p={},{} w={} h={} s={} o={}",
         convert(p1m.m_position.x, 2), convert(p1m.m_position.y, 2), p1m.m_width, p1m.m_height, p1m.m_scale, p1m.m_opacity,
         p1m.m_modeB, p1m.m_deadzone, p1m.m_radius, p1m.m_snap, p1m.m_split,
         convert(p2m.m_position.x, 2), convert(p2m.m_position.y, 2), p2m.m_width, p2m.m_height, p2m.m_scale, p2m.m_opacity,
         p2m.m_modeB, p2m.m_deadzone, p2m.m_radius, p2m.m_snap, p2m.m_split,
         convert(p1j.m_position.x, 2), convert(p1j.m_position.y, 2), p1j.m_width, p1j.m_height, p1j.m_scale, p1j.m_opacity,
         convert(p2j.m_position.x, 2), convert(p2j.m_position.y, 2), p2j.m_width, p2j.m_height, p2j.m_scale, p2j.m_opacity
-    ) : fmt::format("pos={}, {} w={} h={} s={} opacity={} modeb={} dz={} radius={} snap={} split={}\njumpL={}",
+    ) : fmt::format("p={},{} w={} h={} s={} o={} m={} dz={} r={} sn={} sp={}\njL={}",
         convert(p1m.m_position.x, 2), convert(p1m.m_position.y, 2), p1m.m_width, p1m.m_height, p1m.m_scale, p1m.m_opacity,
         p1m.m_modeB, p1m.m_deadzone, p1m.m_radius, p1m.m_snap, p1m.m_split, this->jumpL
     );
