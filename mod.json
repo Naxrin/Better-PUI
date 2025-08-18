@@ -3,7 +3,8 @@
 	"gd": {
 		"win": "2.2074",
 		"android": "2.2074",
-		"mac": "2.2074"
+		"mac": "2.2074",
+		"ios": "2.2074"
 	},
 	"id": "naxrin.better_pui",
 	"name": "Better PUI",
@@ -26,7 +27,7 @@
 			"name": "Background Opacity",
 			"description": "0~255 Default to full",
 			"type": "int",
-			"default": 255,
+			"default": 100,
 			"max": 255,
 			"min": 0,
 			"control": {

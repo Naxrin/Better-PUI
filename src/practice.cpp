@@ -169,7 +169,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	}
 
 	bool ccTouchBegan(CCTouch* touch, CCEvent* event) override {
-        return SetupTriggerPopup::ccTouchBegan(touch, event);
+        return true;
     }
 
 	void ccTouchMoved(CCTouch* touch, CCEvent* event) override { }

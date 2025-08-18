@@ -348,6 +348,7 @@ bool PlatformPreviewFrame::ccTouchBegan(CCTouch* touch, CCEvent* event) {
         //log::debug("rect = {} {}", r.origin.x, r.origin.y);
         r.origin = p1mNode->getPosition() - r.size / 2;
         bool ret = r.containsPoint(t);
+        
         Signal(-100, ret ? 0 : -114).post();
         return ret;
     }

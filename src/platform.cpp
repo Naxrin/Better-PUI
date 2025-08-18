@@ -543,16 +543,12 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 	}
 
 	bool ccTouchBegan(CCTouch* touch, CCEvent* event) override {
-		return SetupTriggerPopup::ccTouchBegan(touch, event);
+		return true;
 	}
 
-	void ccTouchMoved(CCTouch* touch, CCEvent* event) override {
-		
-	}
+	void ccTouchMoved(CCTouch* touch, CCEvent* event) override { }
 
-	void ccTouchEnded(CCTouch* touch, CCEvent* event) override {
-
-	}
+	void ccTouchEnded(CCTouch* touch, CCEvent* event) override { }
 
 	// refresh status in menu, will NOT affect the preview frame
 	// called when: dual switch, loaded from a slot
