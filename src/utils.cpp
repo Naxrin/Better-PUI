@@ -83,6 +83,7 @@ bool InputSliderBundle::init(const char* title, float min, float max, int accu) 
     m_input->setFilter("0123456789.");
     m_input->setPosition(ccp(-30.f, 0.f));
     m_input->setDelegate(this);
+    m_input->setID("inputer");
     this->addChild(m_input);
 
     this->m_slider = Slider::create(this, menu_selector(InputSliderBundle::onSlider));

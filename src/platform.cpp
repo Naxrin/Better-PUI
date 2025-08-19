@@ -286,6 +286,8 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 					this->m_fields->deadzoneMenu->setTag(-int(p2) - 21);
 					this->m_fields->radiusMenu->setTag(-int(p2) - 19);
 
+					static_cast<TextInput*>(this->m_fields->deadzoneMenu->getChildByID("inputer"))->setEnabled(event->value < 3);
+					static_cast<TextInput*>(this->m_fields->radiusMenu->getChildByID("inputer"))->setEnabled(event->value < 3);
 					this->m_fields->deadzoneMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, event->value < 3)));
 					this->m_fields->radiusMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, event->value < 3)));
 					// togglers
@@ -507,6 +509,13 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		else {
 			this->m_fields->map->setTouchEnabled(!in);
 
+			static_cast<TextInput*>(this->m_fields->widthMenu->getChildByID("inputer"))->setEnabled(!in);
+			static_cast<TextInput*>(this->m_fields->heightMenu->getChildByID("inputer"))->setEnabled(!in);
+			static_cast<TextInput*>(this->m_fields->scaleMenu->getChildByID("inputer"))->setEnabled(!in);
+			static_cast<TextInput*>(this->m_fields->opacityMenu->getChildByID("inputer"))->setEnabled(!in);
+			static_cast<TextInput*>(this->m_fields->deadzoneMenu->getChildByID("inputer"))->setEnabled(!in);
+			static_cast<TextInput*>(this->m_fields->radiusMenu->getChildByID("inputer"))->setEnabled(!in);
+
 			if (in) 
 				this->m_fields->slpage = -1;
 			else {
@@ -568,6 +577,12 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 
 	// switch dual mode
 	void onDual(CCObject*) {
+		if (this->m_fields->id > 2) {
+			static_cast<TextInput*>(this->m_fields->deadzoneMenu->getChildByID("inputer"))->setEnabled(true);
+			static_cast<TextInput*>(this->m_fields->radiusMenu->getChildByID("inputer"))->setEnabled(true);
+			this->m_fields->deadzoneMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 1)));
+			this->m_fields->radiusMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 1)));
+		}
 		// switch and save
 		this->m_fields->id = !this->m_fields->id;
 		Mod::get()->setSavedValue("dual", bool(this->m_fields->id));
@@ -750,13 +765,5 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 				CallFuncExt::create([this] () { this->SetupTriggerPopup::keyBackClicked(); }),
 				nullptr
 			));
-	}
-};
-
-#include <Geode/modify/CCTextInputNode.hpp>
-class $modify(CCTextInputNode) {
-	void keyboardWillShow(CCIMEKeyboardNotificationInfo& p) override {
-		CCTextInputNode::keyboardWillShow(p);
-		log::debug("keyboard will show!!!");
 	}
 };
