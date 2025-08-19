@@ -55,7 +55,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 
 		this->m_fields->radioPos = EventListener<EventFilter<PosSignal>>(
             [this](PosSignal* event) -> ListenerResult {
-				log::debug("pos signal {}", event->tag);
+				//log::debug("pos signal {}", event->tag);
                 this->m_fields->posMenu->setValue(event->pos);
                 this->m_fields->config[m_fields->id]->m_position = event->pos;
 				// symmetric dual
@@ -263,7 +263,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 	}
 
 	ListenerResult handleSignal(Signal* event) {
-		log::debug("handle signal {} {}", event->tag, event->value);
+		//log::debug("handle signal {} {}", event->tag, event->value);
 		// escape from fullscreen preview
 		if (event->tag == -100) {
 			if (event->value == -514 && !this->m_fields->slpage)
@@ -474,6 +474,15 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 
 		m_buttonMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (in + 1))));
 		m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 45.f))));
+	
+		if (!whole) {
+			static_cast<TextInput*>(this->m_fields->widthMenu->getChildByID("inputer"))->setEnabled(in);
+			static_cast<TextInput*>(this->m_fields->heightMenu->getChildByID("inputer"))->setEnabled(in);
+			static_cast<TextInput*>(this->m_fields->scaleMenu->getChildByID("inputer"))->setEnabled(in);
+			static_cast<TextInput*>(this->m_fields->opacityMenu->getChildByID("inputer"))->setEnabled(in);
+			static_cast<TextInput*>(this->m_fields->deadzoneMenu->getChildByID("inputer"))->setEnabled(in && m_fields->id < 3);
+			static_cast<TextInput*>(this->m_fields->radiusMenu->getChildByID("inputer"))->setEnabled(in && m_fields->id < 3);			
+		}
 	}
 
 	// transition for slots
@@ -513,8 +522,8 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			static_cast<TextInput*>(this->m_fields->heightMenu->getChildByID("inputer"))->setEnabled(!in);
 			static_cast<TextInput*>(this->m_fields->scaleMenu->getChildByID("inputer"))->setEnabled(!in);
 			static_cast<TextInput*>(this->m_fields->opacityMenu->getChildByID("inputer"))->setEnabled(!in);
-			static_cast<TextInput*>(this->m_fields->deadzoneMenu->getChildByID("inputer"))->setEnabled(!in);
-			static_cast<TextInput*>(this->m_fields->radiusMenu->getChildByID("inputer"))->setEnabled(!in);
+			static_cast<TextInput*>(this->m_fields->deadzoneMenu->getChildByID("inputer"))->setEnabled(!in && m_fields->id < 3);
+			static_cast<TextInput*>(this->m_fields->radiusMenu->getChildByID("inputer"))->setEnabled(!in && m_fields->id < 3);	
 
 			if (in) 
 				this->m_fields->slpage = -1;
