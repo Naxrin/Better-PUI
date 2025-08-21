@@ -57,13 +57,13 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
             [this](PosSignal* event) -> ListenerResult {
 				//log::debug("pos signal {}", event->tag);
                 this->m_fields->posMenu->setValue(event->pos);
-                this->m_fields->config[m_fields->id]->m_position = event->pos;
+                this->m_fields->config[m_fields->id]->m_position =  m_fields->id == 2 || m_fields->id == 4 ? ccp(m_fields->size.width - event->pos.x, event->pos.y) : event->pos;
 				// symmetric dual
 				if (!event->tag || !m_fields->id || !Mod::get()->getSavedValue<bool>("symmetry"))
 					return ListenerResult::Stop;
 				auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
 				//log::debug("mirror = {}", mirror);
-				this->m_fields->config[mirror]->m_position = ccp(m_fields->size.width - event->pos.x, event->pos.y);
+				this->m_fields->config[mirror]->m_position = m_fields->id == 2 || m_fields->id == 4 ? event->pos : ccp(m_fields->size.width - event->pos.x, event->pos.y);
 				this->m_fields->map->placeNode(mirror, ccp(m_fields->size.width - event->pos.x, event->pos.y), 0.2);
                 return ListenerResult::Stop;
             });
@@ -322,13 +322,13 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		// x pos
 		else if (event->tag == 114) {
             auto m = this->m_fields->map;
-			this->m_fields->config[m_fields->id]->m_position.x = event->value;
+			this->m_fields->config[m_fields->id]->m_position.x = m_fields->id == 2 || m_fields->id == 4 ? m_fields->size.width - event->value : event->value;
 			m->placeNode(m_fields->id, ccp(event->value, m->getChildByTag(m_fields->id)->getPositionY()), 0.2);
 			// symmetric dual
 			if (!m_fields->id || !Mod::get()->getSavedValue<bool>("symmetry"))
 				return ListenerResult::Stop;
 			auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
-			this->m_fields->config[mirror]->m_position = ccp(m_fields->size.width - event->value, this->m_fields->config[m_fields->id]->m_position.y);
+			this->m_fields->config[mirror]->m_position = ccp(m_fields->id == 2 || m_fields->id == 4 ? event->value : m_fields->size.width - event->value, this->m_fields->config[m_fields->id]->m_position.y);
 			this->m_fields->map->placeNode(mirror, ccp(m_fields->size.width - event->value, this->m_fields->config[m_fields->id]->m_position.y), 0.2);
 		}
 		// y pos
@@ -707,13 +707,13 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		};
 		gm->m_dpad3 = UIButtonConfig{
 			.m_width = 280, .m_height = 120, .m_deadzone = 0.f, .m_scale = 1.f, .m_opacity = 255, .m_radius = 10.f, .m_modeB = false,
-			.m_snap = false, .m_position = ccp(m_fields->size.width - 95.f, 36.f), .m_oneButton = false, .m_player2 = true, .m_split = false
+			.m_snap = false, .m_position = ccp(95.f, 36.f), .m_oneButton = false, .m_player2 = true, .m_split = false
 		};
 		gm->m_dpad4 = UIButtonConfig{
 			.m_width = 200, .m_height = 200, .m_scale = 1.f, .m_opacity = 255, .m_position = ccp(95.f, 196.f), .m_oneButton = true, .m_player2 = false
 		};
 		gm->m_dpad5 = UIButtonConfig{
-			.m_width = 200, .m_height = 200, .m_scale = 1.f, .m_opacity = 255, .m_position = ccp(m_fields->size.width - 95.f, 196.f), .m_oneButton = true, .m_player2 = true
+			.m_width = 200, .m_height = 200, .m_scale = 1.f, .m_opacity = 255, .m_position = ccp(95.f, 196.f), .m_oneButton = true, .m_player2 = true
 		};
 
 		this->refreshValue();

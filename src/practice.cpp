@@ -40,6 +40,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
             [this](PosSignal* event) -> ListenerResult {
                 this->m_fields->posMenu->setValue(event->pos);
                 gm->m_practicePos = event->pos;
+				if (auto pl = PlayLayer::get())
+					pl->m_uiLayer->getChildByID("checkpoint-menu")->setPosition(event->pos);
                 return ListenerResult::Stop;
             });
 
@@ -131,16 +133,28 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
             //log::debug("pos x is set to {}", event->value);
 			gm->m_practicePos.x = event->value;
 			this->m_fields->map->placeNode(ccp(event->value, this->m_practiceNode->getPositionY()));
+			if (auto pl = PlayLayer::get())
+				pl->m_uiLayer->getChildByID("checkpoint-menu")->setPositionX(event->value);
 		}
 		// y pos
 		else if (event->tag == 514) {
             //log::debug("pos y is set to {}", event->value);
 			gm->m_practicePos.y = event->value;	
 			this->m_fields->map->placeNode(ccp(this->m_practiceNode->getPositionX(), event->value));
+			if (auto pl = PlayLayer::get())
+				pl->m_uiLayer->getChildByID("checkpoint-menu")->setPositionY(event->value);
+				
 		}		
 		// opacity
 		else if (event->tag == 1) {
             this->valueDidChange(-29, event->value);
+			if (auto pl = PlayLayer::get()) {
+				static_cast<CCSprite*>(pl->m_uiLayer->getChildByID("checkpoint-menu")->getChildByID("add-checkpoint-button")
+					->getChildByID("add-checkpoint-hint"))->setPositionY(event->value);
+				static_cast<CCSprite*>(pl->m_uiLayer->getChildByID("checkpoint-menu")->getChildByID("remove-checkpoint-button")
+					->getChildByID("remove-checkpoint-hint"))->setPositionY(event->value);
+			}
+
 		}
 		return ListenerResult::Stop;
 	}

@@ -457,7 +457,7 @@ void PlatformPreviewFrame::updateState(GJUINode* node, const UIButtonConfig &con
     if (!node->m_oneButton)
         node->m_secondSprite->setVisible(!config.m_modeB);
 
-    this->placeNode(node, config.m_position, d);
+    this->placeNode(node, config.m_player2 ? ccp(this->getContentWidth() - config.m_position.x, config.m_position.y) : config.m_position, d);
     this->scaleNode(node, config.m_scale, d);
     this->alphaNode(node, config.m_opacity, d);
     this->radiusNode(node, config.m_radius, d);
@@ -662,13 +662,13 @@ void SlotFrame::setDualStatus(bool dual) {
     if (this->dual) {
         this->p2m = UIButtonConfig{
             .m_width = 280, .m_height = 120, .m_deadzone = 0.f, .m_scale = 1.f, .m_opacity = 255, .m_radius = 10.f, .m_modeB = false,
-            .m_snap = false, .m_position = ccp(size.width - 95.f, 36.f), .m_oneButton = false, .m_player2 = true, .m_split = false
+            .m_snap = false, .m_position = ccp(95.f, 36.f), .m_oneButton = false, .m_player2 = true, .m_split = false
         };
         this->p1j = UIButtonConfig{
             .m_width = 200, .m_height = 200, .m_scale = 1.f, .m_opacity = 255, .m_position = ccp(95.f, 196.f), .m_oneButton = true, .m_player2 = false
         };
         this->p2j = UIButtonConfig{
-            .m_width = 200, .m_height = 200, .m_scale = 1.f, .m_opacity = 255, .m_position = ccp(size.width - 95.f, 196.f), .m_oneButton = true, .m_player2 = true
+            .m_width = 200, .m_height = 200, .m_scale = 1.f, .m_opacity = 255, .m_position = ccp(95.f, 196.f), .m_oneButton = true, .m_player2 = true
         };
     } else
         this->jumpL = false;
