@@ -11,4 +11,5 @@ I get boring writing Chroma Icons and playing Celeste Strawberry Jam ~~(getting 
 But anyway it's already here.
 
 The options button in this UI is preserved for future update, I know it being there for the only transparency option is a little funny.
-No iOS support for now
+
+No iOS support for now, and I'm afraid this mod is total meaningless except for Android players.
