@@ -57,13 +57,13 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
             [this](PosSignal* event) -> ListenerResult {
 				//log::debug("pos signal {}", event->tag);
                 this->m_fields->posMenu->setValue(event->pos);
-                this->m_fields->config[m_fields->id]->m_position =  m_fields->id == 2 || m_fields->id == 4 ? ccp(m_fields->size.width - event->pos.x, event->pos.y) : event->pos;
+                this->m_fields->config[m_fields->id]->m_position = m_fields->id == 2 || m_fields->id == 4 ? ccp(m_fields->size.width - event->pos.x, event->pos.y) : event->pos;
 				// symmetric dual
 				if (!event->tag || !m_fields->id || !Mod::get()->getSavedValue<bool>("symmetry"))
 					return ListenerResult::Stop;
 				auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
 				//log::debug("mirror = {}", mirror);
-				this->m_fields->config[mirror]->m_position = m_fields->id == 2 || m_fields->id == 4 ? event->pos : ccp(m_fields->size.width - event->pos.x, event->pos.y);
+				this->m_fields->config[mirror]->m_position = m_fields->id == 2 || m_fields->id == 4 ? ccp(m_fields->size.width - event->pos.x, event->pos.y) : event->pos;
 				this->m_fields->map->placeNode(mirror, ccp(m_fields->size.width - event->pos.x, event->pos.y), 0.2);
                 return ListenerResult::Stop;
             });
@@ -259,6 +259,15 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		// transition
 		this->Transition(true, true);
 
+		
+		if (this->m_fields->id) {
+			this->m_fields->map->updateState(1, gm->m_dpad2);
+			this->m_fields->map->updateState(2, gm->m_dpad3);
+			this->m_fields->map->updateState(3, gm->m_dpad4);
+			this->m_fields->map->updateState(4, gm->m_dpad5);
+		} else
+			this->m_fields->map->updateState(0, gm->m_dpad1);
+		
 		return true;
 	}
 
@@ -437,8 +446,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 				}
 			}
 		}
-
-		return ListenerResult::Stop;		
+		return ListenerResult::Stop;
 	}
 
 	void valueDidChange(int p, float val) override {
@@ -481,7 +489,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			static_cast<TextInput*>(this->m_fields->scaleMenu->getChildByID("inputer"))->setEnabled(in);
 			static_cast<TextInput*>(this->m_fields->opacityMenu->getChildByID("inputer"))->setEnabled(in);
 			static_cast<TextInput*>(this->m_fields->deadzoneMenu->getChildByID("inputer"))->setEnabled(in && m_fields->id < 3);
-			static_cast<TextInput*>(this->m_fields->radiusMenu->getChildByID("inputer"))->setEnabled(in && m_fields->id < 3);			
+			static_cast<TextInput*>(this->m_fields->radiusMenu->getChildByID("inputer"))->setEnabled(in && m_fields->id < 3);
 		}
 	}
 
@@ -571,7 +579,8 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 	// refresh status in menu, will NOT affect the preview frame
 	// called when: dual switch, loaded from a slot
 	void refreshValue() {
-		m_fields->posMenu->setValue(this->m_fields->config[m_fields->id]->m_position);
+		auto pos = this->m_fields->config[m_fields->id]->m_position;
+		m_fields->posMenu->setValue(m_fields->id == 2 || m_fields->id == 4 ? ccp(m_fields->size.width - pos.x, pos.y) : pos);
 		m_fields->widthMenu->setValue(this->m_fields->config[m_fields->id]->m_width);
 		m_fields->heightMenu->setValue(this->m_fields->config[m_fields->id]->m_height);
 		m_fields->scaleMenu->setValue(this->m_fields->config[m_fields->id]->m_scale);

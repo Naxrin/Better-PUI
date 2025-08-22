@@ -446,7 +446,6 @@ void PlatformPreviewFrame::updateState(int tag, const UIButtonConfig &config, fl
 }
 
 void PlatformPreviewFrame::updateState(GJUINode* node, const UIButtonConfig &config, float d) {
-
     node->m_deadzone = config.m_deadzone;
     node->m_modeB = config.m_modeB;
     node->m_snap = config.m_snap;
