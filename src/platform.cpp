@@ -49,7 +49,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 	bool init(bool p) {
 		if (!SetupTriggerPopup::init(nullptr, nullptr, 420.f, 280.f, 1))
 			return false;
-
+		
 		this->m_fields->radio = EventListener<EventFilter<Signal>>(
             [this](Signal* event) -> ListenerResult { return this->handleSignal(event); });
 
@@ -337,7 +337,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			if (!m_fields->id || !Mod::get()->getSavedValue<bool>("symmetry"))
 				return ListenerResult::Stop;
 			auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
-			this->m_fields->config[mirror]->m_position = ccp(m_fields->id == 2 || m_fields->id == 4 ? event->value : m_fields->size.width - event->value, this->m_fields->config[m_fields->id]->m_position.y);
+			this->m_fields->config[mirror]->m_position = ccp(m_fields->id == 2 || m_fields->id == 4 ? m_fields->size.width - event->value : event->value, this->m_fields->config[m_fields->id]->m_position.y);
 			this->m_fields->map->placeNode(mirror, ccp(m_fields->size.width - event->value, this->m_fields->config[m_fields->id]->m_position.y), 0.2);
 		}
 		// y pos

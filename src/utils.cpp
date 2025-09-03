@@ -1,27 +1,6 @@
 #include "head.hpp"
 #include <regex>
 
-// convert float to string with given precision
-std::string convert(float val, int accu) {
-    // accuracy
-    std::stringstream ss;
-    ss << std::fixed << std::setprecision(accu) << val;
-    return ss.str();
-}
-
-// deepseek tells me to write this
-std::string regulate(const std::string& input) {
-    if (input == "" || input == "-")
-        return "0";
-    // regex match numbers and no more than one dot
-    std::regex pattern(R"(^-?\d*\.?\d*)");
-    std::smatch matches;
-    
-    if (std::regex_match(input, matches, pattern))
-        return matches[0].str();
-    return "0";
-}
-
 bool PosInputBundle::init() {
     if (!CCMenu::init())
         return false;
@@ -55,13 +34,12 @@ bool PosInputBundle::init() {
 
 void PosInputBundle::textChanged(CCTextInputNode* input) {
     std::string str = input->getString();
-    //log::debug("pos input changed, tag = {}, value = {}", input->getTag(), round(100 * stof(regulate(str))) / 100);
-    Signal(input->getTag(), round(100 * stof(regulate(str))) / 100).post();
+    Signal(input->getTag(), numFromString<float>(str).unwrapOrDefault()).post();
 }
 
 void PosInputBundle::setValue(const CCPoint &pos) {
-    this->m_inputX->setString(convert(pos.x, 2));
-    this->m_inputY->setString(convert(pos.y, 2));
+    this->m_inputX->setString(numToString<float>(pos.x, 2));
+    this->m_inputY->setString(numToString<float>(pos.y, 2));
 }
 
 bool InputSliderBundle::init(const char* title, float min, float max, int accu) {
@@ -97,7 +75,7 @@ bool InputSliderBundle::init(const char* title, float min, float max, int accu) 
 
 void InputSliderBundle::textChanged(CCTextInputNode* input) {
     std::string str = input->getString();
-    float val = stof(convert(stof(regulate(str)), this->accu));
+    float val = numFromString<float>(str).unwrapOrDefault();
     val = (val > this->max) && this->force ? this->max : (val < this->min ? this->min : val);
     this->m_slider->setValue((val - this->min) / (this->max - this->min));
     Signal(this->getTag(), val).post();
@@ -105,15 +83,15 @@ void InputSliderBundle::textChanged(CCTextInputNode* input) {
 
 void InputSliderBundle::onSlider(CCObject* sender) {
     float val = this->min + (this->max - this->min) * this->m_slider->getValue();
-    std::string str = convert(val, accu);
+    std::string str = numToString<float>(val, accu);
     this->m_input->setString(str.c_str());
-    Signal(this->getTag(), stof(str)).post();
+    Signal(this->getTag(), val).post();
 }
 
 void InputSliderBundle::setValue(float val) {
-    std::string str = convert(val, accu);
+    std::string str = numToString<float>(val, accu);
     this->m_input->setString(str.c_str());
-    this->m_slider->setValue((stof(str) - this->min) / (this->max - this->min));
+    this->m_slider->setValue((val - this->min) / (this->max - this->min));
 }
 
 bool PreviewFrame::init() {
@@ -570,8 +548,8 @@ void SlotFrame::parseSingleBtn(UIButtonConfig &config, std::string raw) {
         return;
     }
     // regex
-    std::regex pt(config.m_oneButton ? R"w(^(\d+),(\d+),(\d+.?\d{0,2})\d*,(\d+.?\d{0,2})\d*,(\d+.?\d{0,2})\d*,(\d+.?\d{0,2})\d*$)w"
-        : R"w(^(\d+),(\d+),(\d+.?\d{0,2})\d*,(\d+.?\d{0,2})\d*,(\d+.?\d{0,2})\d*,(\d+.?\d{0,2})\d*,([01]),(\d+.?\d{0,1})\d*,(\d+.?\d{0,1})\d*,([01]),([01])$)w");
+    std::regex pt(config.m_oneButton ? R"w(^(\d+),(\d+),(\d+.?\d{0,2})\d*,(\d+.?\d{0,2})\d*,(-?\d+.?\d{0,2})\d*,(-?\d+.?\d{0,2})\d*$)w"
+        : R"w(^(\d+),(\d+),(\d+.?\d{0,2})\d*,(\d+.?\d{0,2})\d*,(-?\d+.?\d{0,2})\d*,(-?\d+.?\d{0,2})\d*,([01]),(\d+.?\d{0,1})\d*,(\d+.?\d{0,1})\d*,([01]),([01])$)w");
     std::smatch match;
 
     this->real = std::regex_match(raw, match, pt);
@@ -579,17 +557,17 @@ void SlotFrame::parseSingleBtn(UIButtonConfig &config, std::string raw) {
     if (!this->real)
         return;
     // data fill to be fixed
-    config.m_width = stoi(match.str(1));
-    config.m_height = stoi(match.str(2));
-    config.m_scale = stof(match.str(3));
-    config.m_opacity = 255 * (stof(match.str(4)) > 1 ? 1 : stof(match.str(4)));
-    config.m_position = ccp(stof(match.str(5)), stof(match.str(6)));
+    config.m_width = numFromString<int>(match.str(1)).unwrapOrDefault();
+    config.m_height = numFromString<int>(match.str(2)).unwrapOrDefault();
+    config.m_scale = numFromString<float>(match.str(3)).unwrapOrDefault();
+    config.m_opacity = 255 * (numFromString<float>(match.str(4)).unwrapOrDefault() > 1 ? 1 : numFromString<float>(match.str(4)).unwrapOrDefault());
+    config.m_position = ccp(numFromString<float>(match.str(5)).unwrapOrDefault(), numFromString<float>(match.str(6)).unwrapOrDefault());
     if (!config.m_oneButton) {
-        config.m_modeB = stoi(match.str(7));
-        config.m_deadzone = stof(match.str(8));
-        config.m_radius = stof(match.str(9));
-        config.m_snap = stoi(match.str(10));
-        config.m_split = stoi(match.str(11));
+        config.m_modeB = numFromString<int>(match.str(7)).unwrapOrDefault();
+        config.m_deadzone = numFromString<float>(match.str(8)).unwrapOrDefault();
+        config.m_radius = numFromString<float>(match.str(9)).unwrapOrDefault();
+        config.m_snap = numFromString<int>(match.str(10)).unwrapOrDefault();
+        config.m_split = numFromString<int>(match.str(11)).unwrapOrDefault();
     }
 }
 
@@ -620,7 +598,7 @@ void SlotFrame::parse() {
         this->parseSingleBtn(this->p2m, match.str(2));
         this->parseSingleBtn(this->p1j, match.str(3));
     } else
-        this->jumpL = stoi(match.str(2));
+        this->jumpL = numFromString<int>(match.str(2)).unwrapOrDefault();
 }
 
 void SlotFrame::refreshDescLabel() {
@@ -633,14 +611,14 @@ void SlotFrame::refreshDescLabel() {
         "P2M p={},{} w={} h={} s={} o={} m={} dz={} r={} sn={} sp={}\n"
         "P1J p={},{} w={} h={} s={} o={}\n"
         "P1J p={},{} w={} h={} s={} o={}",
-        convert(p1m.m_position.x, 2), convert(p1m.m_position.y, 2), p1m.m_width, p1m.m_height, p1m.m_scale, p1m.m_opacity,
+        numToString<float>(p1m.m_position.x, 2), numToString<float>(p1m.m_position.y, 2), p1m.m_width, p1m.m_height, p1m.m_scale, p1m.m_opacity,
         p1m.m_modeB, p1m.m_deadzone, p1m.m_radius, p1m.m_snap, p1m.m_split,
-        convert(p2m.m_position.x, 2), convert(p2m.m_position.y, 2), p2m.m_width, p2m.m_height, p2m.m_scale, p2m.m_opacity,
+        numToString<float>(p2m.m_position.x, 2), numToString<float>(p2m.m_position.y, 2), p2m.m_width, p2m.m_height, p2m.m_scale, p2m.m_opacity,
         p2m.m_modeB, p2m.m_deadzone, p2m.m_radius, p2m.m_snap, p2m.m_split,
-        convert(p1j.m_position.x, 2), convert(p1j.m_position.y, 2), p1j.m_width, p1j.m_height, p1j.m_scale, p1j.m_opacity,
-        convert(p2j.m_position.x, 2), convert(p2j.m_position.y, 2), p2j.m_width, p2j.m_height, p2j.m_scale, p2j.m_opacity
+        numToString<float>(p1j.m_position.x, 2), numToString<float>(p1j.m_position.y, 2), p1j.m_width, p1j.m_height, p1j.m_scale, p1j.m_opacity,
+        numToString<float>(p2j.m_position.x, 2), numToString<float>(p2j.m_position.y, 2), p2j.m_width, p2j.m_height, p2j.m_scale, p2j.m_opacity
     ) : fmt::format("p={},{} w={} h={} s={} o={} m={} dz={} r={} sn={} sp={}\njL={}",
-        convert(p1m.m_position.x, 2), convert(p1m.m_position.y, 2), p1m.m_width, p1m.m_height, p1m.m_scale, p1m.m_opacity,
+        numToString<float>(p1m.m_position.x, 2), numToString<float>(p1m.m_position.y, 2), p1m.m_width, p1m.m_height, p1m.m_scale, p1m.m_opacity,
         p1m.m_modeB, p1m.m_deadzone, p1m.m_radius, p1m.m_snap, p1m.m_split, this->jumpL
     );
     this->descLabel = CCLabelBMFont::create(str.c_str(), "chatFont.fnt");

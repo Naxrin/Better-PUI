@@ -1,3 +1,7 @@
+# 3.0.3
+- I should know there is numToString and numFromString earlier
+- Fix a little issue of the mod menu logic
+
 # 3.0.2
 - iOS support
 - Fix possible stoi and stof issues
