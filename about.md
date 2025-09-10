@@ -1,4 +1,4 @@
-# Better Platformer & Practice Config UI
+# Better Platform and Practice Buttons Config UI
 Geometry Dash is a good game but RobTop's Platformer & Practice buttons config UI looks weird (and ugly?), it's terribly hard to get his logic of settings and it actually have tons of weird designs and bugs like:
 - No position inputer for buttons;
 - In Platformer buttons UI, snap and split options looks like nonsense;

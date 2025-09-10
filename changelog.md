@@ -1,3 +1,6 @@
+# 3.0.4
+- full mod name
+
 # 3.0.3
 - I should know there is numToString and numFromString earlier
 - Fix a little issue of the mod menu logic
