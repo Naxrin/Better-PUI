@@ -1,5 +1,8 @@
 # 3.0.4
-- full mod name
+- Better mod name
+- Fix outline and p2 position issues in dual switch
+- Optional background color
+- More end-user friendly background option range (0-100 now)
 
 # 3.0.3
 - I should know there is numToString and numFromString earlier

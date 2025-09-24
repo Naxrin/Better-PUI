@@ -143,7 +143,7 @@ class PlatformPreviewFrame : public PreviewFrame {
 protected:
     // generated as preview
     bool preview;
-    // current ID (never be zero)
+    // current ID (zero for single mode)
     int current;
     // activated
     bool activate;

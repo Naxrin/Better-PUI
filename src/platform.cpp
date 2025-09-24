@@ -72,7 +72,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		m_fields->opl = CCScene::get()->getChildByType<GameOptionsLayer>(0);
 
 		// bg color
-		this->setColor(ccc3(0, 0, 0));
+		this->setColor(Mod::get()->getSettingValue<ccColor3B>("bg-color"));
 		this->setOpacity(0);
 
 		m_fields->id = Mod::get()->getSavedValue<bool>("dual");
@@ -268,6 +268,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		} else
 			this->m_fields->map->updateState(0, gm->m_dpad1);
 		
+
 		return true;
 	}
 
@@ -457,7 +458,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 	// transition for main menu
 	// whole means enter or exit the whole ui config menu
 	void Transition(bool in, bool whole) {
-		this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, in * Mod::get()->getSettingValue<int64_t>("bgopacity"))));
+		this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, in * Mod::get()->getSettingValue<int64_t>("bg-opacity") * 255 / 100)));
 
 		if (whole) {
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.25 * (in + 1))));

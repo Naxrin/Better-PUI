@@ -49,7 +49,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		m_fields->opl = CCScene::get()->getChildByType<GameOptionsLayer>(0);
 
 		// bg color
-		this->setColor(ccc3(0, 0, 0));
+		this->setColor(Mod::get()->getSettingValue<ccColor3B>("bg-color"));
 		this->setOpacity(0);
 
 		// hide the frame
@@ -160,7 +160,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	}
 
 	void Transition(bool in, bool whole) {
-		this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.3, in * Mod::get()->getSettingValue<int64_t>("bgopacity"))));
+		this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.3, in * Mod::get()->getSettingValue<int64_t>("bg-opacity") * 255 / 100)));
 
 		if (whole) {
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.25 * (in + 1))));

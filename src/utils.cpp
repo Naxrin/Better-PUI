@@ -384,6 +384,11 @@ void PlatformPreviewFrame::switchDual() {
     this->p1mNode->setTag(this->current);
 
     this->updateState(this->current, this->current ? gm->m_dpad2 : gm->m_dpad1, 0.2 * (!this->preview));
+    if (this->current) {
+        this->updateState(2, gm->m_dpad3, 0.2 * (!this->preview));
+        this->updateState(3, gm->m_dpad4, 0.2 * (!this->preview));
+        this->updateState(4, gm->m_dpad5, 0.2 * (!this->preview));
+    }
 
     this->alphaNode(this->p2mNode, this->current * gm->m_dpad3.m_opacity, 0.2 * (!this->preview));
     this->alphaNode(this->p1jNode, this->current * gm->m_dpad4.m_opacity, 0.2 * (!this->preview));
@@ -424,23 +429,24 @@ void PlatformPreviewFrame::updateState(int tag, const UIButtonConfig &config, fl
 }
 
 void PlatformPreviewFrame::updateState(GJUINode* node, const UIButtonConfig &config, float d) {
+
+    node->m_rect.size = ccp(config.m_width, config.m_height);
+    node->m_rect.origin = ccp(- config.m_width / 2, - config.m_height / 2);
     node->m_deadzone = config.m_deadzone;
     node->m_modeB = config.m_modeB;
     node->m_snap = config.m_snap;
     node->m_split = config.m_split;
-    node->m_rect.size = ccp(config.m_width, config.m_height);
     
     node->m_firstSprite->setVisible(!config.m_modeB);
     if (!node->m_oneButton)
         node->m_secondSprite->setVisible(!config.m_modeB);
 
+    node->updateButtonFrames();
+
     this->placeNode(node, config.m_player2 ? ccp(this->getContentWidth() - config.m_position.x, config.m_position.y) : config.m_position, d);
     this->scaleNode(node, config.m_scale, d);
     this->alphaNode(node, config.m_opacity, d);
     this->radiusNode(node, config.m_radius, d);
-
-    node->updateButtonFrames();
-
 }
 
 // set position of target node
@@ -775,4 +781,11 @@ void SlotFrame::onApply(CCObject*) {
     }
     // tell main page to refresh
     Signal(810, this->getTag()).post();
+}
+
+$execute {
+    log::error("convertion ported");
+    // not ported yet, and ever loaded
+    if (!Mod::get()->setSavedValue("ported", true) && Mod::get()->getSavedSettingsData().contains("bgopacity"))
+        Mod::get()->setSettingValue<int64_t>("bg-opacity", Mod::get()->getSavedSettingsData()["bgopacity"].asInt().unwrapOr(217) * 100 / 255);
 }
