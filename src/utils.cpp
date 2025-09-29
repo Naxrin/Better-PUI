@@ -763,10 +763,9 @@ void SlotFrame::onSave(CCObject*) {
     }
 
     this->refreshDescLabel();
-    if (this->showing)
-        Signal(94, true).post();
+    Signal(94, this->getTag() + this->showing * 3).post();
     // notify
-    FLAlertLayer::create("Saved!", fmt::format("Current config has been dumped to Slot {}.", this->getTag()), "Nice")->show();
+    //FLAlertLayer::create("Saved!", fmt::format("Current config has been dumped to Slot {}.", this->getTag()), "Nice")->show();
 }
 
 void SlotFrame::onApply(CCObject*) {

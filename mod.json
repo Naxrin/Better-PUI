@@ -10,7 +10,7 @@
 	"name": "Better Platform & Practice Config UI",
 	"version": "v3.0.5",
 	"developer": "naxrin",
-	"description": "Optimized Platform/Practice Btn modify UI",
+	"description": "Better Platform & Practice button config UI",
 	"resources": {
 		"sprites": [
 			"resources/*"

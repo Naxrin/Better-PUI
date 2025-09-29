@@ -379,16 +379,20 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			if (this->m_fields->slpage > 0)
 				this->TransitionSlots(true, true);
 			// notify
-			FLAlertLayer::create("Loaded!", fmt::format("Config inside Slot {} has been applied as current.", event->value), "Nice")->show();
+			this->showNotify(fmt::format("Config inside Slot {} has been applied as current.", event->value).c_str());
 		}
 		else if (event->tag == 94) {
-		if (this->m_fields->id) {
-			this->m_fields->preview->updateState(1, gm->m_dpad2, 0.2);
-			this->m_fields->preview->updateState(2, gm->m_dpad3, 0.2);
-			this->m_fields->preview->updateState(3, gm->m_dpad4, 0.2);
-			this->m_fields->preview->updateState(4, gm->m_dpad5, 0.2);
-		} else
-			this->m_fields->preview->updateState(0, gm->m_dpad1, 0.2);
+			if (event->value > 3) {
+				if (this->m_fields->id) {
+					this->m_fields->preview->updateState(1, gm->m_dpad2, 0.2);
+					this->m_fields->preview->updateState(2, gm->m_dpad3, 0.2);
+					this->m_fields->preview->updateState(3, gm->m_dpad4, 0.2);
+					this->m_fields->preview->updateState(4, gm->m_dpad5, 0.2);
+				} else
+					this->m_fields->preview->updateState(0, gm->m_dpad1, 0.2);				
+			}
+			// FLAertLayer
+			this->showNotify(fmt::format("Current config has been dumped to Slot {}.", (int)event->value % 3).c_str());
 		}
 		// opacity and more
 		else if (event->tag < 0) {
@@ -567,6 +571,35 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + !in * 45.f))));
 		}
 
+	}
+
+	void showNotify(const char* str) {
+		auto notifyWidget = CCNode::create();
+		notifyWidget->setPosition(ccp(m_fields->size.width / 2, -6.f));
+		notifyWidget->setContentSize(ccp(0.f, 0.f));
+		notifyWidget->setID("notify-widget");
+		this->m_mainLayer->addChild(notifyWidget);
+
+		auto notifyBar = CCLayerColor::create(ccc4(255, 255, 255, 144));
+		notifyBar->setContentSize(ccp(m_fields->size.width, 12.f));
+		notifyBar->setAnchorPoint(ccp(0.5, 0.5));
+		notifyBar->ignoreAnchorPointForPosition(false);
+		notifyWidget->addChild(notifyBar);
+
+		auto notifyLabel = CCLabelBMFont::create("notify", "chatFont.fnt");
+        notifyLabel->setAlignment(CCTextAlignment::kCCTextAlignmentCenter);
+        notifyLabel->setScale(0.4);
+		notifyLabel->setColor(ccBLACK);		
+        notifyWidget->addChild(notifyLabel);
+		notifyLabel->setString(str);
+
+		notifyWidget->runAction(CCSequence::create(
+			CCEaseExponentialOut::create(CCMoveTo::create(0.2, ccp(m_fields->size.width / 2, 6.f))),
+			CCDelayTime::create(2.f),
+			CCEaseExponentialOut::create(CCMoveTo::create(0.2, ccp(m_fields->size.width / 2, -6.f))),
+			CallFuncExt::create([notifyWidget]() { notifyWidget->removeFromParentAndCleanup(true); }),
+			nullptr
+		));
 	}
 
 	bool ccTouchBegan(CCTouch* touch, CCEvent* event) override {
