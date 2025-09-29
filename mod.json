@@ -8,9 +8,9 @@
 	},
 	"id": "naxrin.better_pui",
 	"name": "Better Platform & Practice Config UI",
-	"version": "v3.0.4",
+	"version": "v3.0.5",
 	"developer": "naxrin",
-	"description": "Less stupid Platform/Practice Btn modify UI",
+	"description": "Optimized Platform/Practice Btn modify UI",
 	"resources": {
 		"sprites": [
 			"resources/*"

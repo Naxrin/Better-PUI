@@ -1,3 +1,7 @@
+# 3.0.5
+- Better save load notify
+- Less profanity mod desc
+
 # 3.0.4
 - Better mod name
 - Fix outline and p2 position issues in dual switch
