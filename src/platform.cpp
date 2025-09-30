@@ -1,4 +1,5 @@
 #include <Geode/ui/GeodeUI.hpp>
+#include "ccTypes.h"
 #include "head.hpp"
 
 #include <Geode/modify/UIOptionsLayer.hpp>
@@ -355,8 +356,12 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		}
 		// launch slot preview
 		else if (event->tag == 1919) {
-			if (!event->value) {
+			if (event->value == -1) {
 				this->TransitionSlots(true, true);
+				return ListenerResult::Stop;
+			}
+			else if (!event->value) {
+				this->showNotify("Empty Slot!", true);
 				return ListenerResult::Stop;
 			}
 			//auto slot = event->value ? event->value : this->m_fields->slpage;
@@ -375,11 +380,14 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		}
 		// load a slot
 		else if (event->tag == 810) {
-			this->refreshValue();
-			if (this->m_fields->slpage > 0)
-				this->TransitionSlots(true, true);
-			// notify
-			this->showNotify(fmt::format("Config inside Slot {} has been applied as current.", event->value).c_str());
+			if (event->value) {
+				this->refreshValue();
+				if (this->m_fields->slpage > 0)
+					this->TransitionSlots(true, true);
+				// notify
+				this->showNotify(fmt::format("Config inside Slot {} has been applied as current.", event->value).c_str());				
+			} else
+				this->showNotify("Empty Slot!", true);
 		}
 		else if (event->tag == 94) {
 			if (event->value > 3) {
@@ -573,7 +581,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 
 	}
 
-	void showNotify(const char* str) {
+	void showNotify(const char* str, bool warning = false) {
 		auto notifyWidget = CCNode::create();
 		notifyWidget->setPosition(ccp(m_fields->size.width / 2, -6.f));
 		notifyWidget->setContentSize(ccp(0.f, 0.f));
@@ -589,7 +597,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		auto notifyLabel = CCLabelBMFont::create("notify", "chatFont.fnt");
         notifyLabel->setAlignment(CCTextAlignment::kCCTextAlignmentCenter);
         notifyLabel->setScale(0.4);
-		notifyLabel->setColor(ccBLACK);		
+		notifyLabel->setColor(warning ? ccRED : ccGREEN);		
         notifyWidget->addChild(notifyLabel);
 		notifyLabel->setString(str);
 

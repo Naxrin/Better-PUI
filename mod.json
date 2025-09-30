@@ -8,9 +8,9 @@
 	},
 	"id": "naxrin.better_pui",
 	"name": "Better Platform & Practice Config UI",
-	"version": "v3.0.5",
+	"version": "v3.1.0",
 	"developer": "naxrin",
-	"description": "Better Platform & Practice button config UI",
+	"description": "Optimized Platform/Practice Buttons config UI",
 	"resources": {
 		"sprites": [
 			"resources/*"
@@ -23,9 +23,15 @@
 	    }
 	},
 	"settings": {
+		"bg-color": {
+			"name": "Background Color",
+			"description": "0~100 Default to 85",
+			"type": "color",
+			"default": "000000"
+		},
         "bg-opacity": {
 			"name": "Background Opacity",
-			"description": "0 if whole transparent expected to 100 if pure black",
+			"description": "0~100 Default to 85",
 			"type": "int",
 			"default": 85,
 			"max": 100,
@@ -34,12 +40,6 @@
 				"input": true,
 				"slider-step": 1
 			}
-		},
-        "bg-color": {
-			"name": "Background Color",
-			"description": "I have to admit some colors are not suggested, it depends on you though.",
-			"type": "color",
-			"default": "000000"
 		}
 	}
 }

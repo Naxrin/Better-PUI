@@ -431,7 +431,7 @@ void PlatformPreviewFrame::updateState(int tag, const UIButtonConfig &config, fl
 void PlatformPreviewFrame::updateState(GJUINode* node, const UIButtonConfig &config, float d) {
 
     node->m_rect.size = ccp(config.m_width, config.m_height);
-    node->m_rect.origin = ccp(- config.m_width / 2, - config.m_height / 2);
+    node->m_rect.origin = ccp(-config.m_width / 2.f, -config.m_height / 2.f);
     node->m_deadzone = config.m_deadzone;
     node->m_modeB = config.m_modeB;
     node->m_snap = config.m_snap;
@@ -665,9 +665,6 @@ void SlotFrame::setDualStatus(bool dual) {
     this->raw = s[this->getTag() - 1];
     this->parse();
 
-    this->prevBtn->setEnabled(real);
-    this->loadBtn->setEnabled(real);
-
     this->titleLabel->setString(fmt::format("Dpad Layout {} #{}", this->dual ? "Dual" : "", this->getTag()).c_str());
 
     this->descLabel->setString("");
@@ -680,13 +677,16 @@ void SlotFrame::setDualStatus(bool dual) {
 
 void SlotFrame::onPreview(CCObject*) {
     if (this->showing) {
-        Signal(1919, false).post();
+        Signal(1919, -1).post();
         return;
     }
-    this->showing = true;
-    // post signal firstly
-    Signal(1919, this->getTag()).post();
 
+    // post signal firstly
+    Signal(1919, this->real * this->getTag()).post();
+    if (!this->real)
+        return;
+    
+    this->showing = true;    
     // background
     this->bg->runAction(CCEaseExponentialOut::create(CCMoveTo::create(
         0.2, ccp(0.f, -this->getPositionY()))));
@@ -744,8 +744,6 @@ void SlotFrame::resume() {
 
 void SlotFrame::onSave(CCObject*) {
     this->real = true;
-    this->prevBtn->setEnabled(true);
-    this->loadBtn->setEnabled(true);
 
     if (this->dual) {
         this->p1m = gm->m_dpad2;
@@ -779,11 +777,11 @@ void SlotFrame::onApply(CCObject*) {
         gm->setGameVariable("0113", this->jumpL);
     }
     // tell main page to refresh
-    Signal(810, this->getTag()).post();
+    Signal(810, this->real * this->getTag()).post();
 }
 
 $execute {
-    log::error("convertion ported");
+    //log::error("convertion ported");
     // not ported yet, and ever loaded
     if (!Mod::get()->setSavedValue("ported", true) && Mod::get()->getSavedSettingsData().contains("bgopacity"))
         Mod::get()->setSettingValue<int64_t>("bg-opacity", Mod::get()->getSavedSettingsData()["bgopacity"].asInt().unwrapOr(217) * 100 / 255);
