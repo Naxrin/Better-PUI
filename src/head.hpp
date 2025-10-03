@@ -57,8 +57,11 @@ public:
 // a bundle that contains a positive value
 class InputSliderBundle : public CCMenu, public TextInputDelegate {
 protected:
+    // range
     float min, max;
+    // precision
     int accu;
+    // if the value should never overflow
     bool force;
     TextInput* m_input;
     Slider* m_slider;
@@ -69,6 +72,8 @@ protected:
     // slider
     void onSlider(CCObject* sender);
 public:
+    // register devtools
+    static void registerDevTools();
     // set the inner value of inputer and slider
     void setValue(float val);
     // create it
@@ -158,6 +163,8 @@ protected:
     // snap or not
     void ccTouchEnded(CCTouch* touch, CCEvent* event) override;
 public:
+    // register devtools
+    static void registerDevTools();
     // get current modified tag (zero for single mode)
     int getCurrent();
     // switch between single mode and dual mode
@@ -229,6 +236,8 @@ public:
     UIButtonConfig p1m, p2m, p1j, p2j;
     // jumpL
     bool jumpL;
+    // register devtools
+    static void registerDevTools();
     // set dual status
     void setDualStatus(bool dual);
     // preview this config

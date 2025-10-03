@@ -6,8 +6,4 @@ Geometry Dash is a good game but RobTop's Platformer & Practice buttons config U
 - In Practice buttons UI, the opacity inputer and slider does not return to 1.00 on reset button clicked.
 - If we transport our savefile (or save load?) between devices of different screen ratio, our carefully designed UI will definitely break or even go outside of the screen.
 
-I get boring writing Chroma Icons and playing Celeste Strawberry Jam ~~(getting rekt by Starfruit Supernova goldberry)~~ these days so I spent a week to write this new mod. I'm not sure it's worthy or not (for it has been 20 months since 2.2 and most of us should seldom access the two menus?) 
-
-But anyway it's already here.
-
-The options button in this UI is preserved for future update, I know it being there for the only transparency option is a little funny.
+I'm not sure it's worthy or not (for it has been 20 months since 2.2 and most of us should seldom access the two menus?)But anyway it's already here.

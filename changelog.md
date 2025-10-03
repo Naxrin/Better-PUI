@@ -1,3 +1,9 @@
+# 3.1.1
+- Fix scale / opacity / radius change on slider looks oddity
+- Fix width / height inputer precision issue
+- Fix save slot animation glitch in operation spam
+- Register some node class members in devtools (by editing variables you agree to take all possible risks by your own)
+
 # 3.1.0
 - Better save load notify
 - Less profanity mod desc

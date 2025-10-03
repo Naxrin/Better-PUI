@@ -1,4 +1,5 @@
 #include "head.hpp"
+#include <geode.devtools/include/API.hpp>
 #include <regex>
 
 bool PosInputBundle::init() {
@@ -83,9 +84,23 @@ void InputSliderBundle::textChanged(CCTextInputNode* input) {
 
 void InputSliderBundle::onSlider(CCObject* sender) {
     float val = this->min + (this->max - this->min) * this->m_slider->getValue();
-    std::string str = numToString<float>(val, accu);
+    std::string str;
+    if (accu)
+        str = numToString<float>(val, accu);
+    else
+        str = numToString<int>(val);
     this->m_input->setString(str.c_str());
     Signal(this->getTag(), val).post();
+}
+
+void InputSliderBundle::registerDevTools() {
+    devtools::registerNode<InputSliderBundle>([](InputSliderBundle* node) {
+        devtools::label("InputSliderBundle");
+        devtools::property("min", node->min);        
+        devtools::property("max", node->max);
+        devtools::property("precision", node->accu);
+        devtools::property("force ranged", node->force);
+    });
 }
 
 void InputSliderBundle::setValue(float val) {
@@ -375,6 +390,15 @@ void PlatformPreviewFrame::ccTouchEnded(CCTouch* touch, CCEvent* event) {
     PosSignal(true, dest).post();
 }
 
+void PlatformPreviewFrame::registerDevTools() {
+    devtools::registerNode<PlatformPreviewFrame>([](PlatformPreviewFrame* node) {
+        devtools::label("PlatformPreviewFrame");
+        devtools::property("index", node->current);        
+        devtools::property("preview", node->preview);
+        devtools::property("activate", node->activate);
+    });
+}
+
 int PlatformPreviewFrame::getCurrent() {
     return this->current;
 }
@@ -635,6 +659,15 @@ void SlotFrame::refreshDescLabel() {
     this->addChild(this->descLabel);
 }
 
+void SlotFrame::registerDevTools() {
+    devtools::registerNode<SlotFrame>([](SlotFrame* node) {
+        devtools::label("SlotFrame");
+        devtools::property("dual", node->dual);        
+        devtools::property("real", node->real);
+        devtools::property("showing", node->showing);
+    });
+}
+
 void SlotFrame::setDualStatus(bool dual) {
     this->dual = dual;
 
@@ -688,27 +721,33 @@ void SlotFrame::onPreview(CCObject*) {
     
     this->showing = true;    
     // background
+    this->bg->stopAllActions();
     this->bg->runAction(CCEaseExponentialOut::create(CCMoveTo::create(
         0.2, ccp(0.f, -this->getPositionY()))));
     this->bg->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, size.width / 360.f, size.height / 70.f)));
     this->bg->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, 0)));
     
     // title label
+    this->titleLabel->stopAllActions();
     this->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(
         0.2, ccp(180.f - 0.3 * this->titleLabel->getContentWidth(), 170.f - this->getPositionY()))));
     this->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.6)));
 
     // description text
+    this->descLabel->stopAllActions();
     this->descLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(
         0.2, ccp(180.f - 0.35 * this->descLabel->getContentWidth(), -20.f - this->getPositionY()))));
     this->descLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.7)));
 
+    this->prevBtn->stopAllActions();
     this->prevBtn->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(140.f, -100.f - this->getPositionY()))));
     this->prevBtn->getChildByType<CCSprite>(0)->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.6)));
 
+    this->saveBtn->stopAllActions();
     this->saveBtn->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(180.f, -100.f - this->getPositionY()))));
     this->saveBtn->getChildByType<CCSprite>(0)->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.6)));
 
+    this->loadBtn->stopAllActions();
     this->loadBtn->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(220.f, -100.f - this->getPositionY()))));
     this->loadBtn->getChildByType<CCSprite>(0)->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.6)));
 }
@@ -721,23 +760,29 @@ void SlotFrame::resume() {
     Signal(-100, 0).post();
     //log::debug("resume");
     // title label
+    this->titleLabel->stopAllActions();
     this->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(10.f, 55.f))));
     this->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5)));
 
+    this->bg->stopAllActions();
     this->bg->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(0.f, 0.f))));
     this->bg->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 1)));
     this->bg->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, 50)));
 
     // description text
+    this->descLabel->stopAllActions();
     this->descLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(10.f, 40.f))));
     this->descLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5)));
 
+    this->prevBtn->stopAllActions();
     this->prevBtn->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(290.f, 10.f))));
     this->prevBtn->getChildByType<CCSprite>(0)->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.4)));
 
+    this->saveBtn->stopAllActions();
     this->saveBtn->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(315.f, 10.f))));
     this->saveBtn->getChildByType<CCSprite>(0)->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.4)));
 
+    this->loadBtn->stopAllActions();
     this->loadBtn->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(340.f, 10.f))));
     this->loadBtn->getChildByType<CCSprite>(0)->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.4)));
 }
@@ -785,4 +830,14 @@ $execute {
     // not ported yet, and ever loaded
     if (!Mod::get()->setSavedValue("ported", true) && Mod::get()->getSavedSettingsData().contains("bgopacity"))
         Mod::get()->setSettingValue<int64_t>("bg-opacity", Mod::get()->getSavedSettingsData()["bgopacity"].asInt().unwrapOr(217) * 100 / 255);
+
+}
+
+$on_mod(Loaded) {
+    // makes sure DevTools is loaded before registering
+    devtools::waitForDevTools([] {
+        InputSliderBundle::registerDevTools();
+        PlatformPreviewFrame::registerDevTools();
+        SlotFrame::registerDevTools();
+    });    
 }

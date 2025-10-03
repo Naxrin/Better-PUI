@@ -1,5 +1,5 @@
 #include <Geode/ui/GeodeUI.hpp>
-#include "ccTypes.h"
+#include <geode.devtools/include/API.hpp>
 #include "head.hpp"
 
 #include <Geode/modify/UIOptionsLayer.hpp>
@@ -389,7 +389,9 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			} else
 				this->showNotify("Empty Slot!", true);
 		}
+		// save to slot
 		else if (event->tag == 94) {
+			// currently showing the slot
 			if (event->value > 3) {
 				if (this->m_fields->id) {
 					this->m_fields->preview->updateState(1, gm->m_dpad2, 0.2);
@@ -424,20 +426,20 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			}
 			if (event->tag >= -12 && event->tag <= -9) {
 				this->m_fields->config[m_fields->id]->m_scale = event->value;
-				this->m_fields->map->scaleNode(m_fields->id, event->value, 0.2);
+				this->m_fields->map->scaleNode(m_fields->id, event->value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
 					this->m_fields->config[mirror]->m_scale = event->value;
-					this->m_fields->map->scaleNode(mirror, event->value, 0.2);
+					this->m_fields->map->scaleNode(mirror, event->value);
 				}
 			}
 			if (event->tag >= -16 && event->tag <= -13) {
 				this->m_fields->config[m_fields->id]->m_opacity = 255 * event->value;
-				this->m_fields->map->alphaNode(m_fields->id, 255 * event->value, 0.2);
+				this->m_fields->map->alphaNode(m_fields->id, 255 * event->value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
 					this->m_fields->config[mirror]->m_opacity = 255 * event->value;
-					this->m_fields->map->alphaNode(mirror, 255 * event->value, 0.2);
+					this->m_fields->map->alphaNode(mirror, 255 * event->value);
 				}
 			}
 			if (event->tag == -21 || event->tag == -22) {
@@ -451,48 +453,52 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			}
 			if (event->tag == -19 || event->tag == -20) {
 				this->m_fields->config[m_fields->id]->m_radius = event->value;
-				this->m_fields->map->radiusNode(m_fields->id, event->value, 0.2);
+				//this->m_fields->map->radiusNode(m_fields->id, event->value);
+				this->valueDidChange(event->tag, event->value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = 3 - m_fields->id;
 					this->m_fields->config[mirror]->m_radius = event->value;
-					this->m_fields->map->radiusNode(mirror, event->value, 0.2);
+					this->valueDidChange(-39 - event->tag, event->value);
+					//this->m_fields->map->radiusNode(mirror, event->value);
 				}
 			}
 		}
 		return ListenerResult::Stop;
 	}
-
-	void valueDidChange(int p, float val) override {
-		UIOptionsLayer::valueDidChange(p, val);
-		//log::debug("value did change p = {} val = {}", p, val);
-	}
 	
 	// transition for main menu
 	// whole means enter or exit the whole ui config menu
 	void Transition(bool in, bool whole) {
-		this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, in * Mod::get()->getSettingValue<int64_t>("bg-opacity") * 255 / 100)));
-
 		if (whole) {
+			this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, in * Mod::get()->getSettingValue<int64_t>("bg-opacity") * 255 / 100)));
+			
+			this->m_fields->map->stopAllActions();
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.25 * (in + 1))));
 			m_fields->map->helpTransition(in);
 		} else {
 			this->m_fields->inprev = !in;
 			m_fields->opl->setVisible(in);
+			this->m_fields->map->stopAllActions();
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 1 - 0.5 * in)));
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(100.f * in, 30.f * in))));
 		}
 
-		m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.35 * (in + 1))));
-		m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
+		this->m_fields->titleLabel->stopAllActions();
+		this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.35 * (in + 1))));
+		this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
 
-		m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (in + 1))));
-		m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 110.f))));
+		this->m_fields->posMenu->stopAllActions();
+		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (in + 1))));
+		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 110.f))));
 
+		this->m_mainLayer->getChildByID("panel")->stopAllActions();
 		this->m_mainLayer->getChildByID("panel")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.7 * in)));
 
+		this->m_mainLayer->getChildByID("official-options")->stopAllActions();
 		this->m_mainLayer->getChildByID("official-options")->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 80.f))));
 		this->m_mainLayer->getChildByID("official-options")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, in)));
 
+		this->m_buttonMenu->stopAllActions();
 		m_buttonMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (in + 1))));
 		m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 45.f))));
 	
@@ -514,10 +520,12 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			this->m_fields->inprev = !in;
 			this->m_fields->preview->setTouchEnabled(!in);
 			//m_fields->opl->setVisible(in);
-			m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.35 * (in + 1))));
-			m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
+			this->m_fields->titleLabel->stopAllActions();
+			this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.35 * (in + 1))));
+			this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
 
 			for (auto slot : this->m_fields->slots) {
+				slot->stopAllActions();				
 				if (in)
 					slot->resume();
 				if (slot->getTag() == this->m_fields->slpage)
@@ -528,6 +536,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 				slot->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, 255 * in)));
 			}
 
+			this->m_fields->preview->stopAllActions();
 			this->m_fields->preview->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (!in))));
 			this->m_fields->preview->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(0.f, 30.f * !in))));
 			this->m_fields->preview->helpTransition(!in);
@@ -560,23 +569,27 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			}
 
 			for (auto slot : this->m_fields->slots) {
+				slot->stopAllActions();
 				slot->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, in)));
 				slot->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, 255 * in)));
 			}
 
+			this->m_fields->map->stopAllActions();
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.25 * (!in + 1))));
-			m_fields->map->helpTransition(!in);
+			this->m_fields->map->helpTransition(!in);
 
-			m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (!in + 1))));
-			m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + !in * 110.f))));
+			this->m_fields->posMenu->stopAllActions();
+			this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (!in + 1))));
+			this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + !in * 110.f))));
 
 			this->m_mainLayer->getChildByID("panel")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.7 * !in)));
 
 			this->m_mainLayer->getChildByID("official-options")->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + !in * 80.f))));
 			this->m_mainLayer->getChildByID("official-options")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, !in)));
 
-			m_buttonMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (!in + 1))));
-			m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + !in * 45.f))));
+			this->m_buttonMenu->stopAllActions();
+			this->m_buttonMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.5 * (!in + 1))));
+			this->m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + !in * 45.f))));
 		}
 
 	}

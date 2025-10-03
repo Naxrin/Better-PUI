@@ -160,26 +160,32 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	}
 
 	void Transition(bool in, bool whole) {
-		this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.3, in * Mod::get()->getSettingValue<int64_t>("bg-opacity") * 255 / 100)));
-
 		if (whole) {
+			this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.3, in * Mod::get()->getSettingValue<int64_t>("bg-opacity") * 255 / 100)));
+			
+			this->m_fields->map->stopAllActions();
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.25 * (in + 1))));
 		} else {
+			this->m_fields->map->stopAllActions();
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 1 - 0.5 * in)));
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.2, ccp(0.f, 30.f * in))));
 		}
 
-		m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.35 * (in + 1))));
-		m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
+		this->m_fields->titleLabel->stopAllActions();
+		this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.35 * (in + 1))));
+		this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
 
-		m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.5 * (in + 1))));
-		m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 110.f))));
+		this->m_fields->posMenu->stopAllActions();
+		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.5 * (in + 1))));
+		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 110.f))));
 
-		m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.5 * (in + 1))));
-		m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 80.f))));
+		this->m_fields->opacityMenu->stopAllActions();
+		this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.5 * (in + 1))));
+		this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 80.f))));
 
-		m_buttonMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.5 * (in + 1))));
-		m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 45.f))));
+		this->m_buttonMenu->stopAllActions();
+		this->m_buttonMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.5 * (in + 1))));
+		this->m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 45.f))));
 	}
 
 	bool ccTouchBegan(CCTouch* touch, CCEvent* event) override {
