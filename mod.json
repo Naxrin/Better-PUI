@@ -27,6 +27,12 @@
 		}
 	},
 	"settings": {
+		"dont-crash": {
+			"name": "Crash Protect",
+			"description": "Windows only, listeners are not destructed on menu close and ghost listeners will crash the game.\nCheck it then setting listeners will not be created, and settings change will not work instantly",
+			"type": "bool",
+			"default": true
+		},
 		"bg-title": {
 			"name": "Background",
 			"description": "Modify your background (if you really need?)",
@@ -50,8 +56,14 @@
 				"slider-step": 1
 			}
 		},
+		"ui-color": {
+			"name": "UI Color",
+			"description": "buttons, grid lines, text labels,... and so on",
+			"type": "color",
+			"default": "FFFFFF"
+		},
 		"slot-color": {
-			"name": "Slot Color",
+			"name": "Slot Frame Color",
 			"description": "If you really need...",
 			"type": "rgba",
 			"default": "FFFFFF32"

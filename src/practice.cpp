@@ -18,7 +18,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		InputSliderBundle* opacityMenu;
 
 		// button sprites
-		CCSprite* snapSpr;
+		CCMenuItemSpriteExtra* snapBtn;
 
 		// map
 		PracticePreviewFrame* map;
@@ -51,9 +51,6 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		// bg color
 		this->setColor(Mod::get()->getSettingValue<ccColor3B>("bg-color"));
 		this->setOpacity(0);
-
-		listenForSettingChangesV3("bg-color", [this] (ccColor3B val) { this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b)); });
-		listenForSettingChangesV3("bg-opacity", [this] (int val) { this->runAction(CCFadeTo::create(0.2, val * 255 / 100.f)); });
 		
 		// hide the frame
 		this->m_mainLayer->getChildByTag(1)->setVisible(false);
@@ -99,6 +96,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
             {80, {"applyBtn.png"_spr, menu_selector(PracticeOptionsLayer::onClose)}}
         };
 
+		auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
+
         for (auto [k, v] : btnIndexes) {
             auto spr = CCSprite::create(v.first);
             spr->setScale(0.6);
@@ -107,9 +106,11 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
             this->m_buttonMenu->addChild(btn);
 
 			if (v.first == "snapBtn.png"_spr) {
-				this->m_fields->snapSpr = spr;
-				spr->setColor(Mod::get()->getSavedValue<bool>("snap") ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
-			}
+				this->m_fields->snapBtn = btn;
+				btn->setTag(10);
+				btn->setColor(Mod::get()->getSavedValue<bool>("snap") ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
+			} else
+			btn->setColor(color);				
         }
 
 		this->m_buttonMenu->setPositionY(-5.f);
@@ -119,6 +120,19 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 
 		this->Transition(true, true);
 		m_fields->map->helpTransition(true);
+
+		#ifdef GEODE_IS_WINDOWS
+		if (Mod::get()->getSettingValue<bool>("dont-crash"))
+			return true;
+		#endif
+
+		listenForSettingChangesV3("bg-color", [this] (ccColor3B val) { this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b)); });
+		listenForSettingChangesV3("bg-opacity", [this] (int val) { this->runAction(CCFadeTo::create(0.2, val * 255 / 100.f)); });
+		listenForSettingChangesV3("ui-color", [this] (ccColor3B val) {
+			for (auto child : CCArrayExt<CCMenuItemSpriteExtra*>(this->m_buttonMenu->getChildren()))
+				if (child->getTag() != 10)
+					child->setColor(val);
+		});
 
 		return true;
 	}
@@ -163,9 +177,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	}
 
 	void Transition(bool in, bool whole) {
+		this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.3, in * Mod::get()->getSettingValue<int64_t>("bg-opacity") * 255 / 100)));
 		if (whole) {
-			this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.3, in * Mod::get()->getSettingValue<int64_t>("bg-opacity") * 255 / 100)));
-			
 			this->m_fields->map->stopAllActions();
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.25 * (in + 1))));
 		} else {
@@ -215,7 +228,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
         Mod::get()->setSavedValue("snap", !on);
 		this->m_fields->map->setGridVisibility(!on);
 		// tint color
-		this->m_fields->snapSpr->runAction(CCTintTo::create(0.2, 128 + 127 * on, 255 - 127 * on, 128));
+		this->m_fields->snapBtn->runAction(CCTintTo::create(0.2, 128 + 127 * on, 255 - 127 * on, 128));
 	}
 
 	void onResetNew(CCObject* obj) {

@@ -31,7 +31,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		PlatformPreviewFrame* map, * preview;
 
 		// some sprites
-		CCSprite* dualSpr, * snapSpr;
+		CCMenuItemSpriteExtra* dualBtn, * snap0Btn;
 
 		// labels
 		CCLabelBMFont* modeLabel, * snapLabel, * splitLabel, * jumplLabel, * symmetryLabel;
@@ -76,9 +76,6 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		this->setColor(Mod::get()->getSettingValue<ccColor3B>("bg-color"));
 		this->setOpacity(0);
 
-		listenForSettingChangesV3("bg-color", [this] (ccColor3B val) { this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b)); });
-		listenForSettingChangesV3("bg-opacity", [this] (int val) { this->runAction(CCFadeTo::create(0.2, val * 255 / 100.f)); });
-		
 		m_fields->id = Mod::get()->getSavedValue<bool>("dual");
 
 		// hide the frame
@@ -234,23 +231,32 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
             {80, {"resetBtn.png"_spr, menu_selector(PlatformOptionsLayer::onResetNew)}},
             {120, {"applyBtn.png"_spr, menu_selector(PlatformOptionsLayer::onClose)}}
         };
-		
+
+
+		auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
+
         for (auto [k, v] : btnIndexes) {
             auto spr = CCSprite::create(v.first);
             spr->setScale(0.6);
             auto btn = CCMenuItemSpriteExtra::create(spr, this, v.second);
 			btn->setPositionX(k);
+
             this->m_buttonMenu->addChild(btn);
 
 			if (v.first == "dualBtn.png"_spr) {
-				this->m_fields->dualSpr = spr;
-				spr->setColor(m_fields->id ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
+				this->m_fields->dualBtn = btn;
+				btn->setTag(10);
+				btn->setColor(m_fields->id ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
 			}
 
-			if (v.first == "snapBtn.png"_spr) {
-				this->m_fields->snapSpr = spr;
-				spr->setColor(Mod::get()->getSavedValue<bool>("snap") ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
+			else if (v.first == "snapBtn.png"_spr) {
+				this->m_fields->snapBtn = btn;
+				btn->setTag(10);
+				btn->setColor(Mod::get()->getSavedValue<bool>("snap") ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
 			}
+
+			else
+				btn->setColor(color);
         }
 
 		this->m_buttonMenu->setPositionY(-5.f);
@@ -271,7 +277,19 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			this->m_fields->map->updateState(4, gm->m_dpad5);
 		} else
 			this->m_fields->map->updateState(0, gm->m_dpad1);
-		
+
+		#ifdef GEODE_IS_WINDOWS
+		if (Mod::get()->getSettingValue<bool>("dont-crash"))
+			return true;
+		#endif
+
+		listenForSettingChangesV3("bg-color", [this] (ccColor3B val) { this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b)); });
+		listenForSettingChangesV3("bg-opacity", [this] (int val) { this->runAction(CCFadeTo::create(0.2, val * 255 / 100.f)); });
+		listenForSettingChangesV3("ui-color", [this] (ccColor3B val) {
+			for (auto child : CCArrayExt<CCMenuItemSpriteExtra*>(this->m_buttonMenu->getChildren()))
+				if (child->getTag() != 10)
+					child->setColor(val);
+		});
 
 		return true;
 	}
@@ -663,7 +681,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		this->m_fields->id = !this->m_fields->id;
 		Mod::get()->setSavedValue("dual", bool(this->m_fields->id));
 		// tint button
-		this->m_fields->dualSpr->runAction(this->m_fields->id ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+		this->m_fields->dualBtn->runAction(this->m_fields->id ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
 		// title label
 		this->m_nameLabel->setString(m_fields->id ? "P1 Move" : "Single Mode");
 		// input slider bundles tag
@@ -759,7 +777,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
         Mod::get()->setSavedValue("snap", !on);
 		this->m_fields->map->setGridVisibility(!on);
 		// tint color
-		this->m_fields->snapSpr->runAction(CCTintTo::create(0.4, 128 + 127 * on, 255 - 127 * on, 128));
+		this->m_fields->snap0Btn->runAction(CCTintTo::create(0.4, 128 + 127 * on, 255 - 127 * on, 128));
 	}
 
 	void onResetNew(CCObject*) {

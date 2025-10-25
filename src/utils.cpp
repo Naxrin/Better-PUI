@@ -7,10 +7,12 @@ bool PosInputBundle::init() {
         return false;
 
     this->setContentSize(ccp(0.f, 0.f));
+    auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
 
-    auto labelX = CCLabelBMFont::create("X = ", "chatFont.fnt");
-    labelX->setPosition(ccp(-150.f, 0.f));
-    this->addChild(labelX);
+    this->m_labelX = CCLabelBMFont::create("X = ", "chatFont.fnt");
+    m_labelX->setPosition(ccp(-150.f, 0.f));
+    m_labelX->setColor(color);
+    this->addChild(m_labelX);
 
     this->m_inputX = TextInput::create(60, "X Pos");
     m_inputX->setFilter("-0123456789.");
@@ -19,9 +21,10 @@ bool PosInputBundle::init() {
     m_inputX->setDelegate(this);
     this->addChild(m_inputX);
 
-    auto labelY = CCLabelBMFont::create("Y = ", "chatFont.fnt");
-    labelY->setPosition(ccp(60.f, 0.f));
-    this->addChild(labelY);
+    this->m_labelY = CCLabelBMFont::create("Y = ", "chatFont.fnt");
+    m_labelY->setPosition(ccp(60.f, 0.f));
+    m_labelY->setColor(color);
+    this->addChild(m_labelY);
 
     this->m_inputY = TextInput::create(60, "Y Pos");
     m_inputY->setFilter("-0123456789.");
@@ -29,6 +32,16 @@ bool PosInputBundle::init() {
     m_inputY->getInputNode()->setTag(514);
     m_inputY->setDelegate(this);
     this->addChild(m_inputY);
+    
+    #ifdef GEODE_IS_WINDOWS
+    if (Mod::get()->getSettingValue<bool>("dont-crash"))
+        return true;
+    #endif
+
+    listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
+        this->m_labelX->setColor(color);
+        this->m_labelY->setColor(color);
+    });
 
     return true;
 }
@@ -37,6 +50,7 @@ void PosInputBundle::textChanged(CCTextInputNode* input) {
     std::string str = input->getString();
     Signal(input->getTag(), numFromString<float>(str).unwrapOrDefault()).post();
 }
+
 
 void PosInputBundle::setValue(const CCPoint &pos) {
     this->m_inputX->setString(numToString<float>(pos.x, 2));
@@ -54,9 +68,10 @@ bool InputSliderBundle::init(const char* title, float min, float max, int accu) 
     this->force = std::string(title) == "Opacity";
     this->setContentSize(ccp(0.f, 0.f));
 
-    auto label = CCLabelBMFont::create(fmt::format("{} = ", title).c_str(), "chatFont.fnt");
-    label->setPosition(ccp(-100.f, 0.f));
-    this->addChild(label);
+    this->m_label = CCLabelBMFont::create(fmt::format("{} = ", title).c_str(), "chatFont.fnt");
+    m_label->setPosition(ccp(-100.f, 0.f));
+    m_label->setColor(Mod::get()->getSettingValue<ccColor3B>("ui-color"));
+    this->addChild(m_label);
 
     this->m_input = TextInput::create(60, "0 ~ 1");
     m_input->setFilter("0123456789.");
@@ -71,6 +86,15 @@ bool InputSliderBundle::init(const char* title, float min, float max, int accu) 
     m_slider->setContentSize(ccp(0.f, 0.f));
     m_slider->setScale(0.6f);
     this->addChild(m_slider);
+
+    #ifdef GEODE_IS_WINDOWS
+    if (Mod::get()->getSettingValue<bool>("dont-crash"))
+        return true;
+    #endif
+
+    listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
+        this->m_label->setColor(color);
+    });
 
     return true;
 }
@@ -137,12 +161,15 @@ bool PreviewFrame::init() {
     //m_grid->setCascadeOpacityEnabled(true);
     this->addChild(m_grid);
 
+    auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
+
     float tripleX[3] = {-center.width, 0, center.width};
     for (float x : tripleX) {
         auto v = CCLayerColor::create(ccc4(255, 255, 255, 0));
         v->setPosition(ccp(x, 0));
         v->setContentSize(ccp(1.2, size.height));
         v->ignoreAnchorPointForPosition(false);
+        v->setColor(color);
         //v->setCascadeOpacityEnabled(true);
         if (x)
             m_border->addChild(v);
@@ -159,6 +186,7 @@ bool PreviewFrame::init() {
         h->setPosition(ccp(0, y));
         h->setContentSize(ccp(size.width, 1.2));
         h->ignoreAnchorPointForPosition(false);
+        h->setColor(color);
         //h->setCascadeOpacityEnabled(true);
         if (y)
             m_border->addChild(h);
@@ -174,6 +202,11 @@ bool PreviewFrame::init() {
 
     this->setTouchEnabled(true);
     this->setTouchMode(ccTouchesMode::kCCTouchesOneByOne);
+
+    #ifdef GEODE_IS_WINDOWS
+    if (Mod::get()->getSettingValue<bool>("dont-crash"))
+        return true;
+    #endif
 
     listenForSettingChangesV3("hori-distance", [this] (int) {
         this->vert.clear();
@@ -213,6 +246,13 @@ bool PreviewFrame::init() {
         this->reGridY(true);
     });
 
+    listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
+        for (auto child : CCArrayExt<CCLayerColor*>(m_border->getChildren()))
+            child->setColor(color);
+        for (auto child : CCArrayExt<CCLayerColor*>(m_grid->getChildren()))
+            child->setColor(color);
+    });
+
     return true;
 }
 
@@ -222,7 +262,7 @@ void PreviewFrame::reGridX(bool visible) {
     auto center = size / 2; 
 
     int hd = Mod::get()->getSettingValue<int64_t>("hori-distance");
-    log::debug("hd = {}", hd);
+    auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
 
     float x = 0;
     while (center.width - x > hd) {
@@ -231,6 +271,7 @@ void PreviewFrame::reGridX(bool visible) {
         l->setPosition(ccp(-x, 0));
         l->setContentSize(ccp(0.6, size.height));
         l->ignoreAnchorPointForPosition(false);
+        l->setColor(color);
         l->setTag(114);
         m_grid->addChild(l);
         this->vert.push_back(l);
@@ -239,6 +280,7 @@ void PreviewFrame::reGridX(bool visible) {
         r->setPosition(ccp(+x, 0));
         r->setContentSize(ccp(0.6, size.height));
         r->ignoreAnchorPointForPosition(false);
+        r->setColor(color);
         r->setTag(114);
         m_grid->addChild(r);
         this->vert.push_back(r);
@@ -251,6 +293,7 @@ void PreviewFrame::reGridY(bool visible) {
     auto center = size / 2; 
 
     int vd = Mod::get()->getSettingValue<int64_t>("vert-distance");
+    auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
 
     float y = 0;
     while (center.height - y > vd) {
@@ -260,6 +303,7 @@ void PreviewFrame::reGridY(bool visible) {
         t->setPosition(ccp(0, -y));
         t->setContentSize(ccp(size.width, 0.6));
         t->ignoreAnchorPointForPosition(false);
+        t->setColor(color);
         t->setTag(514);
         m_grid->addChild(t);
         this->hori.push_back(t);
@@ -268,6 +312,7 @@ void PreviewFrame::reGridY(bool visible) {
         b->setPosition(ccp(0, +y));
         b->setContentSize(ccp(size.width, 0.6));
         b->ignoreAnchorPointForPosition(false);
+        b->setColor(color);
         b->setTag(514);
         m_grid->addChild(b);
         this->hori.push_back(b);
@@ -617,10 +662,13 @@ bool SlotFrame::init(int nametag) {
     this->titleLabel->setID("title");
     this->addChild(this->titleLabel);
 
+    auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
+
     this->descLabel = CCLabelBMFont::create("desc", "chatFont.fnt", 1000.f);
     this->descLabel->setPosition(ccp(10.f, 40.f));
     this->descLabel->setAnchorPoint(ccp(0.f, 1));
     this->descLabel->setScale(0.55);
+    this->descLabel->setColor(color);
     this->descLabel->setID("desc");
     this->addChild(this->descLabel);
 
@@ -628,22 +676,38 @@ bool SlotFrame::init(int nametag) {
     prevSpr->setScale(0.4);
     this->prevBtn = CCMenuItemSpriteExtra::create(prevSpr, this, menu_selector(SlotFrame::onPreview));
     this->prevBtn->setPosition(ccp(290.f, 10.f));
+    this->prevBtn->setColor(color);
     this->addChild(this->prevBtn);
 
     auto saveSpr = CCSprite::create("slotBtn.png"_spr);
     saveSpr->setScale(0.4);
     this->saveBtn = CCMenuItemSpriteExtra::create(saveSpr, this, menu_selector(SlotFrame::onSave));
     this->saveBtn->setPosition(ccp(315.f, 10.f));
+    this->saveBtn->setColor(color);
     this->addChild(this->saveBtn);
 
     auto loadSpr = CCSprite::create("applyBtn.png"_spr);
     loadSpr->setScale(0.4);
     this->loadBtn = CCMenuItemSpriteExtra::create(loadSpr, this, menu_selector(SlotFrame::onApply));
     this->loadBtn->setPosition(ccp(340.f, 10.f));
+    this->loadBtn->setColor(color);
     this->addChild(this->loadBtn);
 
+    #ifdef GEODE_IS_WINDOWS
+    if (Mod::get()->getSettingValue<bool>("dont-crash"))
+        return true;
+    #endif
+    
 	listenForSettingChangesV3("slot-color", [this] (ccColor4B val) {
         this->bg->setColor(to3B(val)); this->bg->setOpacity(val.a); });
+
+    listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
+        this->descLabel->setColor(color);
+        this->prevBtn->setColor(color);
+        this->saveBtn->setColor(color);
+        this->loadBtn->setColor(color);
+    });
+
     return true;
 }
 

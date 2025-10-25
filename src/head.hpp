@@ -33,6 +33,8 @@ public:
 // a menu bundle to set position in two inputs
 class PosInputBundle : public CCMenu, public TextInputDelegate {
 protected:
+    // labels
+    CCLabelBMFont* m_labelX, * m_labelY;
     // the inputers
     TextInput* m_inputX, * m_inputY;
     // init
@@ -63,6 +65,7 @@ protected:
     int accu;
     // if the value should never overflow
     bool force;
+    CCLabelBMFont* m_label;
     TextInput* m_input;
     Slider* m_slider;
     // init
