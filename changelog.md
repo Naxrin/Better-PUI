@@ -1,3 +1,10 @@
+# 3.2.0
+- Grid density options
+- Optional slot frame color and opacity (how boring i am)
+- Instant effect on settings change
+- Better buttons with shadow
+- Looking on shader-based grid...
+
 # 3.1.1
 - Fix scale / opacity / radius change on slider looks oddity
 - Fix width / height inputer precision issue

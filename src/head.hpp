@@ -102,8 +102,8 @@ protected:
     virtual bool init() override;
 public:
     // change the density of grid
-    // preserved for future update
-    void reGrid(int d);
+    void reGridX(bool visible);
+    void reGridY(bool visible);
     // fade the grid line
     virtual void helpTransition(bool in);
     // set visibility of inner grid line

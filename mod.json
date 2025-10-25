@@ -1,5 +1,5 @@
 {
-	"geode": "4.6.3",
+	"geode": "4.9.0",
 	"gd": {
 		"win": "2.2074",
 		"android": "2.2074",
@@ -8,9 +8,9 @@
 	},
 	"id": "naxrin.better_pui",
 	"name": "Better Platform & Practice Config UI",
-	"version": "v3.1.1",
+	"version": "v3.2.0",
 	"developer": "naxrin",
-	"description": "Optimized Platform/Practice Buttons config UI",
+	"description": "Better Platform/Practice Buttons config UI",
 	"resources": {
 		"sprites": [
 			"resources/*"
@@ -27,9 +27,14 @@
 		}
 	},
 	"settings": {
+		"bg-title": {
+			"name": "Background",
+			"description": "Modify your background (if you really need?)",
+			"type": "title"
+		},
 		"bg-color": {
 			"name": "Background Color",
-			"description": "0~100 Default to 85",
+			"description": "Im so curious what makes you hate the default black background?",
 			"type": "color",
 			"default": "000000"
 		},
@@ -43,6 +48,45 @@
 			"control": {
 				"input": true,
 				"slider-step": 1
+			}
+		},
+		"slot-color": {
+			"name": "Slot Color",
+			"description": "If you really need...",
+			"type": "rgba",
+			"default": "FFFFFF32"
+		},
+		"grid-title": {
+			"name": "Grid Options",
+			"description": "Modify your Grid Options",
+			"type": "title"
+		},
+		"hori-distance": {
+			"name": "Horizental Grid Distance",
+			"description": "Distance between two nearby vertical grid lines. Will not affect existing buttons' placement",
+			"type": "int",
+			"max": 50,
+			"min": 5,
+			"default": 30,
+			"control": {
+				"slider": true,
+				"arrows": true,
+				"arrow-step": 5,
+				"input": true
+			}
+		},
+		"vert-distance": {
+			"name": "Vertical Distance",
+			"description": "Distance between two nearby horizental grid lines. Will not affect existing buttons' placement",
+			"type": "int",
+			"max": 50,
+			"min": 5,
+			"default": 30,
+			"control": {
+				"slider": true,
+				"arrows": true,
+				"arrow-step": 5,
+				"input": true
 			}
 		}
 	}

@@ -63,6 +63,7 @@ bool InputSliderBundle::init(const char* title, float min, float max, int accu) 
     m_input->setPosition(ccp(-30.f, 0.f));
     m_input->setDelegate(this);
     m_input->setID("inputer");
+    m_input->setScale(0.9);
     this->addChild(m_input);
 
     this->m_slider = Slider::create(this, menu_selector(InputSliderBundle::onSlider));
@@ -146,6 +147,7 @@ bool PreviewFrame::init() {
         if (x)
             m_border->addChild(v);
         else {
+            v->setTag(1919);
             m_grid->addChild(v);
             this->vert.push_back(v);            
         }
@@ -161,53 +163,115 @@ bool PreviewFrame::init() {
         if (y)
             m_border->addChild(h);
         else {
+            h->setTag(810);
             m_grid->addChild(h);
             this->hori.push_back(h);
         }
     }
 
-    float x = 0;
-    while (center.width - x > 30.f) {
-        x += 30.f;
-        auto l = CCLayerColor::create(ccc4(255, 255, 255, 0));
-        l->setPosition(ccp(-x, 0));
-        l->setContentSize(ccp(0.6, size.height));
-        l->ignoreAnchorPointForPosition(false);
-        m_grid->addChild(l);
-        this->vert.push_back(l);
-
-        auto r = CCLayerColor::create(ccc4(255, 255, 255, 0));
-        r->setPosition(ccp(+x, 0));
-        r->setContentSize(ccp(0.6, size.height));
-        r->ignoreAnchorPointForPosition(false);
-        m_grid->addChild(r);
-        this->vert.push_back(r);
-    }
-
-    float y = 0;
-    while (center.height - y > 30.f) {
-        y += 30.f;
-
-        auto t = CCLayerColor::create(ccc4(255, 255, 255, 0));
-        t->setPosition(ccp(0, -y));
-        t->setContentSize(ccp(size.width, 0.6));
-        t->ignoreAnchorPointForPosition(false);
-        m_grid->addChild(t);
-        this->hori.push_back(t);
-
-        auto b = CCLayerColor::create(ccc4(255, 255, 255, 0));
-        b->setPosition(ccp(0, +y));
-        b->setContentSize(ccp(size.width, 0.6));
-        b->ignoreAnchorPointForPosition(false);
-        m_grid->addChild(b);
-        this->hori.push_back(b);
-    }
+    this->reGridX(false);
+    this->reGridY(false);
 
     this->setTouchEnabled(true);
     this->setTouchMode(ccTouchesMode::kCCTouchesOneByOne);
-    //this->registerWithTouchDispatcher();
+
+    listenForSettingChangesV3("hori-distance", [this] (int) {
+        this->vert.clear();
+        this->vert.push_back(static_cast<CCLayerColor*>(this->m_grid->getChildByTag(1919)));
+        int i = 0;
+        while (i < m_grid->getChildrenCount()) {
+            auto child = m_grid->getChildByIndex(i);
+            if (child->getTag() == 114)
+                child->removeFromParentAndCleanup(true);
+            else
+                i ++;
+        }
+        /*
+        for (auto child : CCArrayExt<CCNode*>(m_grid->getChildren()))
+            if (child->getTag() == 114)
+                child->removeFromParentAndCleanup(true);
+        */
+        this->reGridX(true);
+    });
+
+    listenForSettingChangesV3("vert-distance", [this] (int) {
+        this->hori.clear();
+        this->hori.push_back(static_cast<CCLayerColor*>(this->m_grid->getChildByTag(810)));
+        int j = 0;
+        while (j < m_grid->getChildrenCount()) {
+            auto child = m_grid->getChildByIndex(j);
+            if (child->getTag() == 514)
+                child->removeFromParentAndCleanup(true);
+            else
+                j ++;
+        }
+        /*
+        for (auto child : CCArrayExt<CCNode*>(m_grid->getChildren()))
+            if (child->getTag() == 514)
+                child->removeFromParentAndCleanup(true);
+        */
+        this->reGridY(true);
+    });
 
     return true;
+}
+
+void PreviewFrame::reGridX(bool visible) {
+    auto size = CCDirector::sharedDirector()->getWinSize();
+    // center
+    auto center = size / 2; 
+
+    int hd = Mod::get()->getSettingValue<int64_t>("hori-distance");
+    log::debug("hd = {}", hd);
+
+    float x = 0;
+    while (center.width - x > hd) {
+        x += hd;
+        auto l = CCLayerColor::create(ccc4(255, 255, 255, visible * 255));
+        l->setPosition(ccp(-x, 0));
+        l->setContentSize(ccp(0.6, size.height));
+        l->ignoreAnchorPointForPosition(false);
+        l->setTag(114);
+        m_grid->addChild(l);
+        this->vert.push_back(l);
+
+        auto r = CCLayerColor::create(ccc4(255, 255, 255, visible * 255));
+        r->setPosition(ccp(+x, 0));
+        r->setContentSize(ccp(0.6, size.height));
+        r->ignoreAnchorPointForPosition(false);
+        r->setTag(114);
+        m_grid->addChild(r);
+        this->vert.push_back(r);
+    }
+}
+
+void PreviewFrame::reGridY(bool visible) {
+    auto size = CCDirector::sharedDirector()->getWinSize();
+    // center
+    auto center = size / 2; 
+
+    int vd = Mod::get()->getSettingValue<int64_t>("vert-distance");
+
+    float y = 0;
+    while (center.height - y > vd) {
+        y += vd;
+
+        auto t = CCLayerColor::create(ccc4(255, 255, 255, visible * 255));
+        t->setPosition(ccp(0, -y));
+        t->setContentSize(ccp(size.width, 0.6));
+        t->ignoreAnchorPointForPosition(false);
+        t->setTag(514);
+        m_grid->addChild(t);
+        this->hori.push_back(t);
+
+        auto b = CCLayerColor::create(ccc4(255, 255, 255, visible * 255));
+        b->setPosition(ccp(0, +y));
+        b->setContentSize(ccp(size.width, 0.6));
+        b->ignoreAnchorPointForPosition(false);
+        b->setTag(514);
+        m_grid->addChild(b);
+        this->hori.push_back(b);
+    }    
 }
 
 void PreviewFrame::helpTransition(bool in) {
@@ -273,7 +337,11 @@ void PracticePreviewFrame::ccTouchEnded(CCTouch* touch, CCEvent* event) {
         return;
     auto t = this->convertTouchToNodeSpace(touch);
     auto c = this->getContentSize() / 2;
-    auto dest = ccp(c.width + 30 * round((t.x - c.width) / 30), c.height + 30 * round((t.y - c.height) / 30));
+
+    int hd = Mod::get()->getSettingValue<int64_t>("hori-distance");
+    int vd = Mod::get()->getSettingValue<int64_t>("vert-distance");
+
+    auto dest = ccp(c.width + hd * round((t.x - c.width) / hd), c.height + vd * round((t.y - c.height) / vd));
     this->m_target->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, dest)));
     PosSignal(0, dest).post();
 }
@@ -385,7 +453,11 @@ void PlatformPreviewFrame::ccTouchEnded(CCTouch* touch, CCEvent* event) {
         return;
     }
     auto c = this->getContentSize() / 2;
-    dest = ccp(c.width + 30 * round((dest.x - c.width) / 30), c.height + 30 * round((dest.y - c.height) / 30));
+
+    int hd = Mod::get()->getSettingValue<int64_t>("hori-distance");
+    int vd = Mod::get()->getSettingValue<int64_t>("vert-distance");
+    
+    dest = ccp(c.width + hd * round((dest.x - c.width) / hd), c.height + vd * round((dest.y - c.height) / vd));
     this->getChildByTag(current)->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, dest)));
     PosSignal(true, dest).post();
 }
@@ -531,7 +603,8 @@ bool SlotFrame::init(int nametag) {
     this->setScale(0);
     this->setTag(nametag);
 
-    this->bg = CCLayerColor::create(ccc4(255, 255, 255, 50));
+    this->bg = CCLayerColor::create(Mod::get()->getSettingValue<ccColor4B>("slot-color"));
+    //this->bg->setOpacity(0);
     this->bg->setContentSize(ccp(360.f, 70.f));
     this->bg->setAnchorPoint(ccp(0.5, 0.5));
     this->bg->setID("background");
@@ -569,6 +642,8 @@ bool SlotFrame::init(int nametag) {
     this->loadBtn->setPosition(ccp(340.f, 10.f));
     this->addChild(this->loadBtn);
 
+	listenForSettingChangesV3("slot-color", [this] (ccColor4B val) {
+        this->bg->setColor(to3B(val)); this->bg->setOpacity(val.a); });
     return true;
 }
 
@@ -758,7 +833,6 @@ void SlotFrame::resume() {
     this->showing = false;
 
     Signal(-100, 0).post();
-    //log::debug("resume");
     // title label
     this->titleLabel->stopAllActions();
     this->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(10.f, 55.f))));
@@ -767,7 +841,7 @@ void SlotFrame::resume() {
     this->bg->stopAllActions();
     this->bg->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(0.f, 0.f))));
     this->bg->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 1)));
-    this->bg->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, 50)));
+    this->bg->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, Mod::get()->getSettingValue<ccColor4B>("slot-color").a)));
 
     // description text
     this->descLabel->stopAllActions();
@@ -807,8 +881,6 @@ void SlotFrame::onSave(CCObject*) {
 
     this->refreshDescLabel();
     Signal(94, this->getTag() + this->showing * 3).post();
-    // notify
-    //FLAlertLayer::create("Saved!", fmt::format("Current config has been dumped to Slot {}.", this->getTag()), "Nice")->show();
 }
 
 void SlotFrame::onApply(CCObject*) {
@@ -826,7 +898,6 @@ void SlotFrame::onApply(CCObject*) {
 }
 
 $execute {
-    //log::error("convertion ported");
     // not ported yet, and ever loaded
     if (!Mod::get()->setSavedValue("ported", true) && Mod::get()->getSavedSettingsData().contains("bgopacity"))
         Mod::get()->setSettingValue<int64_t>("bg-opacity", Mod::get()->getSavedSettingsData()["bgopacity"].asInt().unwrapOr(217) * 100 / 255);

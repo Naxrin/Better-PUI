@@ -76,6 +76,9 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		this->setColor(Mod::get()->getSettingValue<ccColor3B>("bg-color"));
 		this->setOpacity(0);
 
+		listenForSettingChangesV3("bg-color", [this] (ccColor3B val) { this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b)); });
+		listenForSettingChangesV3("bg-opacity", [this] (int val) { this->runAction(CCFadeTo::create(0.2, val * 255 / 100.f)); });
+		
 		m_fields->id = Mod::get()->getSavedValue<bool>("dual");
 
 		// hide the frame
