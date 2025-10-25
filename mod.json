@@ -31,7 +31,8 @@
 			"name": "Crash Protect",
 			"description": "Windows only, listeners are not destructed on menu close and ghost listeners will crash the game.\nCheck it then setting listeners will not be created, and settings change will not work instantly",
 			"type": "bool",
-			"default": true
+			"default": true,
+			"platforms": ["win"]
 		},
 		"bg-title": {
 			"name": "Background",
