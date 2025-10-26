@@ -13,9 +13,9 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		// title
         CCLabelBMFont* titleLabel;
 		// input menu
-		PosInputBundle* posMenu;
+		PosInputBundle* posMenu, *pcpposMenu;
 		// several slider menus
-		InputSliderBundle* opacityMenu;
+		InputSliderBundle* opacityMenu, * pcpScaleMenu;
 
 		// button sprites
 		CCMenuItemSpriteExtra* snapBtn;
@@ -27,6 +27,13 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		EventListener<EventFilter<Signal>> radio;
         // planar radio
         EventListener<EventFilter<PosSignal>> radioPos;
+		
+		// in preview mode
+		bool in_prev;
+
+		// pcp mode
+		Mod* pcpmod = Loader::get()->getLoadedMod("kevadroz.practicecheckpointpermanence");
+		bool pcp;
 	};
 
 	bool init() override {
@@ -38,10 +45,22 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 
 		this->m_fields->radioPos = EventListener<EventFilter<PosSignal>>(
             [this](PosSignal* event) -> ListenerResult {
-                this->m_fields->posMenu->setValue(event->pos);
-                gm->m_practicePos = event->pos;
-				if (auto pl = PlayLayer::get())
-					pl->m_uiLayer->getChildByID("checkpoint-menu")->setPosition(event->pos);
+				if (m_fields->pcp != bool(event->tag)) {
+					m_fields->pcp = event->tag;
+					if (!m_fields->in_prev)
+						this->switchPCP();
+				}
+				// pcppos
+				if (event->tag)
+					this->m_fields->pcpposMenu->setValue(event->pos);
+				// my own
+				else {
+					this->m_fields->posMenu->setValue(event->pos);
+					gm->m_practicePos = event->pos;
+					if (auto pl = PlayLayer::get())
+						pl->m_uiLayer->getChildByID("checkpoint-menu")->setPosition(event->pos);					
+				}
+
                 return ListenerResult::Stop;
             });
 
@@ -67,25 +86,43 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
         m_fields->map->setScale(0.25);
 		m_fields->map->placeNode(gm->m_practicePos);
         m_fields->map->alphaNode(gm->m_practiceOpacity * 255);
+		m_fields->map->setID("map");
 		this->m_mainLayer->addChild(m_fields->map);
 
 		// relocate the practice node
 		this->m_practiceNode = m_fields->map->getChildByID("target");
 
+
 		// pos menu
 		m_fields->posMenu = PosInputBundle::create();
 		m_fields->posMenu->setPositionY(m_fields->size.height / 4 - 130.f);
-		m_fields->posMenu->setScale(0.5);
+		m_fields->posMenu->setScale(0);
+		m_fields->posMenu->setID("pos-menu");
         m_fields->posMenu->setValue(gm->m_practicePos);
 		this->m_mainLayer->addChild(m_fields->posMenu);
 
 		// opacity menu
 		m_fields->opacityMenu = InputSliderBundle::create("Opacity", 0, 1, 2);
 		m_fields->opacityMenu->setPositionY(m_fields->size.height / 4 - 50.f);
-		m_fields->opacityMenu->setScale(0.5);
+		m_fields->opacityMenu->setScale(0);
+		m_fields->opacityMenu->setID("opacity-menu");
 		m_fields->opacityMenu->setTag(1);
         m_fields->opacityMenu->setValue(gm->m_practiceOpacity);
 		this->m_mainLayer->addChild(m_fields->opacityMenu);
+
+		m_fields->pcpmod = Loader::get()->getLoadedMod("kevadroz.practicecheckpointpermanence");
+
+		// pos menu (create it anyway)
+		m_fields->pcpposMenu = PosInputBundle::create();
+		m_fields->pcpposMenu->setPositionY(m_fields->size.height / 4 -50.f);
+		m_fields->pcpposMenu->setScale(0);
+		m_fields->pcpposMenu->setID("pcp-pos-menu");
+		if (m_fields->pcpmod) {
+			m_fields->pcpposMenu->setValue(
+				ccp(m_fields->pcpmod->getSavedValue<double>("switcherMenuPositionX"),
+				m_fields->pcpmod->getSavedValue<double>("switcherMenuPositionY")));
+		}
+		this->m_mainLayer->addChild(m_fields->pcpposMenu);
 
 		// buttons below
         std::map<int, std::pair<const char*, SEL_MenuHandler>> btnIndexes = {
@@ -132,10 +169,14 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 			for (auto child : CCArrayExt<CCMenuItemSpriteExtra*>(this->m_buttonMenu->getChildren()))
 				if (child->getTag() != 10)
 					child->setColor(val);
+
+			//static_cast<CCLabelBMFont*>(this->m_mainLayer->getChildByID("switcher-scale")
+				//->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_label"))->setColor(val);
 		});
 
 		return true;
 	}
+
 
 	ListenerResult handleSignal(Signal* event) {
 		// escape from fullscreen preview
@@ -147,20 +188,33 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		}
 		// x pos
 		else if (event->tag == 114) {
-            //log::debug("pos x is set to {}", event->value);
-			gm->m_practicePos.x = event->value;
-			this->m_fields->map->placeNode(ccp(event->value, this->m_practiceNode->getPositionY()));
-			if (auto pl = PlayLayer::get())
-				pl->m_uiLayer->getChildByID("checkpoint-menu")->setPositionX(event->value);
+			if (m_fields->pcp) {
+				if (m_fields->pcpmod) {
+					m_fields->pcpmod->setSavedValue("switcherMenuPositionX", event->value);
+					m_fields->map->getChildByID("kevadroz.practicecheckpointpermanence/switcher_menu")->setPositionX(event->value);					
+				}
+			} else {
+				//log::debug("pos x is set to {}", event->value);
+				gm->m_practicePos.x = event->value;
+				this->m_fields->map->placeNode(ccp(event->value, this->m_practiceNode->getPositionY()));
+				if (auto pl = PlayLayer::get())
+					pl->m_uiLayer->getChildByID("checkpoint-menu")->setPositionX(event->value);				
+			}
 		}
 		// y pos
 		else if (event->tag == 514) {
-            //log::debug("pos y is set to {}", event->value);
-			gm->m_practicePos.y = event->value;	
-			this->m_fields->map->placeNode(ccp(this->m_practiceNode->getPositionX(), event->value));
-			if (auto pl = PlayLayer::get())
-				pl->m_uiLayer->getChildByID("checkpoint-menu")->setPositionY(event->value);
-				
+			if (m_fields->pcp) {
+				if (m_fields->pcpmod) {
+					m_fields->pcpmod->setSavedValue("switcherMenuPositionY", event->value);
+					m_fields->map->getChildByID("kevadroz.practicecheckpointpermanence/switcher_menu")->setPositionY(event->value);
+				}
+			} else {
+				//log::debug("pos y is set to {}", event->value);
+				gm->m_practicePos.y = event->value;	
+				this->m_fields->map->placeNode(ccp(this->m_practiceNode->getPositionX(), event->value));
+				if (auto pl = PlayLayer::get())
+					pl->m_uiLayer->getChildByID("checkpoint-menu")->setPositionY(event->value);
+			}
 		}		
 		// opacity
 		else if (event->tag == 1) {
@@ -192,12 +246,28 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
 
 		this->m_fields->posMenu->stopAllActions();
-		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.5 * (in + 1))));
-		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 110.f))));
+		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 110.f))));		
+		if (!m_fields->pcp)
+			this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
+
+		if (this->m_fields->pcpposMenu) {
+			this->m_fields->pcpposMenu->stopAllActions();
+			this->m_fields->pcpposMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 110.f))));
+			if (m_fields->pcp)
+				this->m_fields->pcpposMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));			
+		}
 
 		this->m_fields->opacityMenu->stopAllActions();
-		this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.5 * (in + 1))));
 		this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 80.f))));
+		if (!m_fields->pcp)
+			this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
+
+		if (auto menu = this->m_mainLayer->getChildByID("switcher-scale")) {
+			menu->stopAllActions();
+			menu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 80.f))));
+			if (!m_fields->pcp)
+				menu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
+		}
 
 		this->m_buttonMenu->stopAllActions();
 		this->m_buttonMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.5 * (in + 1))));
@@ -212,9 +282,12 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 
 	void ccTouchEnded(CCTouch* touch, CCEvent* event) override { }
 	
-	void textChanged(CCTextInputNode* input) override { }
+	// this empty override makes pcp inputers wholy not clickable, really sucks
+	//void textChanged(CCTextInputNode* input) override { }
 
     void onOptions(CCObject*) {
+		//m_fields->pcp = 1-m_fields->pcp;
+		//this->switchPCP();
 		geode::openSettingsPopup(Mod::get(), false);
 	}
 
@@ -239,6 +312,35 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		this->m_fields->map->alphaNode(255, 0.2);
 		this->m_fields->posMenu->setValue(defpos);
 		this->m_fields->opacityMenu->setValue(1);
+
+		if (m_fields->pcpmod) {
+			m_fields->map->getChildByID("kevadroz.practicecheckpointpermanence/switcher_menu")
+				->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(50.f, m_fields->size.height - 50.f))));
+			m_fields->map->getChildByID("kevadroz.practicecheckpointpermanence/switcher_menu")
+				->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.75f)));
+
+			m_fields->pcpposMenu->setValue(ccp(50.f, m_fields->size.height - 50.f));
+			m_mainLayer->getChildByID("switcher-scale")->getChildByType<TextInput*>(0)->setString("0.75");
+			m_mainLayer->getChildByID("switcher-scale")->getChildByType<Slider*>(0)->setValue(2.f / 11.f);
+			m_fields->pcpmod->setSavedValue("switcherMenuPositionX", 50.f);
+			m_fields->pcpmod->setSavedValue("switcherMenuPositionY", m_fields->size.height - 50.f);
+			m_fields->pcpmod->setSavedValue("switcherMenuScale", 0.75f);
+		}
+	}
+
+	void switchPCP() {
+		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, !m_fields->pcp)));
+		this->m_fields->pcpposMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, m_fields->pcp)));
+		this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, !m_fields->pcp)));
+		if (auto menu = this->m_mainLayer->getChildByID("switcher-scale"))
+			menu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, m_fields->pcp)));
+
+		/*
+		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3,
+			ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + !m_fields->pcp * 110.f))));
+		this->m_fields->pcpposMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3,
+			ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + m_fields->pcp * 110.f))));
+		*/
 	}
 
 	void onClose(CCObject* obj) override {

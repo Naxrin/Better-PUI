@@ -1,6 +1,7 @@
 #include "head.hpp"
 #include <geode.devtools/include/API.hpp>
 #include <regex>
+#include <Geode/loader/Dispatch.hpp>
 
 bool PosInputBundle::init() {
     if (!CCMenu::init())
@@ -697,7 +698,7 @@ bool SlotFrame::init(int nametag) {
     if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
     #endif
-    
+
 	listenForSettingChangesV3("slot-color", [this] (ccColor4B val) {
         this->bg->setColor(to3B(val)); this->bg->setOpacity(val.a); });
 
@@ -966,6 +967,11 @@ $execute {
     if (!Mod::get()->setSavedValue("ported", true) && Mod::get()->getSavedSettingsData().contains("bgopacity"))
         Mod::get()->setSettingValue<int64_t>("bg-opacity", Mod::get()->getSavedSettingsData()["bgopacity"].asInt().unwrapOr(217) * 100 / 255);
 
+    new EventListener(+[](CCPoint pos) {
+        //this->m_fields->pcpposMenu->setValue(pos);
+        PosSignal(1, pos).post();
+        return ListenerResult::Stop;
+    }, DispatchFilter<CCPoint>(Mod::get()->getID()));
 }
 
 $on_mod(Loaded) {

@@ -1,3 +1,8 @@
+# 3.3.0
+- Compatible with Practice Checkpoint Permanance
+- Better mod desc
+- I caps the first letter N of my name (does it worth being noted)
+
 # 3.2.0
 - Grid density options
 - Optional slot frame color and opacity (how boring i am)
