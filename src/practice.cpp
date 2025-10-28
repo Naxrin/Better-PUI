@@ -179,13 +179,13 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 				if (child->getTag() != 10)
 					child->setColor(val);
 
-			//static_cast<CCLabelBMFont*>(this->m_mainLayer->getChildByID("switcher-scale")
-				//->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_label"))->setColor(val);
+			if (auto node = typeinfo_cast<CCLabelBMFont*>(this->m_mainLayer->getChildByID("switcher-scale")
+				->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_label")))
+				node->setColor(val);
 		});
 
 		return true;
 	}
-
 
 	ListenerResult handleSignal(Signal* event) {
 		// escape from fullscreen preview
@@ -203,7 +203,6 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 					m_fields->map->getChildByID("kevadroz.practicecheckpointpermanence/switcher_menu")->setPositionX(event->value);					
 				}
 			} else {
-				//log::debug("pos x is set to {}", event->value);
 				gm->m_practicePos.x = event->value;
 				this->m_fields->map->placeNode(ccp(event->value, this->m_practiceNode->getPositionY()));
 				if (auto pl = PlayLayer::get())
@@ -218,7 +217,6 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 					m_fields->map->getChildByID("kevadroz.practicecheckpointpermanence/switcher_menu")->setPositionY(event->value);
 				}
 			} else {
-				//log::debug("pos y is set to {}", event->value);
 				gm->m_practicePos.y = event->value;	
 				this->m_fields->map->placeNode(ccp(this->m_practiceNode->getPositionX(), event->value));
 				if (auto pl = PlayLayer::get())
@@ -234,7 +232,6 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 				static_cast<CCSprite*>(pl->m_uiLayer->getChildByID("checkpoint-menu")->getChildByID("remove-checkpoint-button")
 					->getChildByID("remove-checkpoint-hint"))->setPositionY(event->value);
 			}
-
 		}
 		return ListenerResult::Stop;
 	}
@@ -272,21 +269,6 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	void ccTouchMoved(CCTouch* touch, CCEvent* event) override { }
 
 	void ccTouchEnded(CCTouch* touch, CCEvent* event) override { }
-	
-	// this empty override makes pcp inputers wholy not clickable, really sucks
-	/*
-	void textChanged(CCTextInputNode* input) override {
-		//UIPOptionsLayer::textChanged(input);
-		log::debug("text changed");
-	}
-
-	void textInputOpened(CCTextInputNode* input) override {
-		log::debug("text input opened");
-	}
-
-	void textInputClosed(CCTextInputNode* input) override {
-		log::debug("text input closed");
-	}*/
 
     void onOptions(CCObject*) {
 		//m_fields->pcp = !m_fields->pcp;
