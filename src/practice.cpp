@@ -36,6 +36,12 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		bool pcp;
 	};
 
+	/*
+	static void onModify(auto& self) {
+		if (!self.setHookPriority("UIPOptionsLayer::init", Priority::Late))
+			geode::log::warn("Failed to set hook priority.");		
+	}*/
+
 	bool init() override {
 		if (!SetupTriggerPopup::init(nullptr, nullptr, 420.f, 280.f, 1))
 			return false;
@@ -106,7 +112,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		m_fields->opacityMenu->setPositionY(m_fields->size.height / 4 - 50.f);
 		m_fields->opacityMenu->setScale(0);
 		m_fields->opacityMenu->setID("opacity-menu");
-		m_fields->opacityMenu->setTag(1);
+		m_fields->opacityMenu->setTag(0);
         m_fields->opacityMenu->setValue(gm->m_practiceOpacity);
 		this->m_mainLayer->addChild(m_fields->opacityMenu);
 
@@ -114,8 +120,9 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 
 		// pos menu (create it anyway)
 		m_fields->pcpposMenu = PosInputBundle::create();
-		m_fields->pcpposMenu->setPositionY(m_fields->size.height / 4 -50.f);
-		m_fields->pcpposMenu->setScale(0);
+		m_fields->pcpposMenu->setPositionX(m_fields->size.width * 1.5);
+		m_fields->pcpposMenu->setPositionY(m_fields->size.height / 4 - 130.f);
+		m_fields->pcpposMenu->setScale(1);
 		m_fields->pcpposMenu->setID("pcp-pos-menu");
 		if (m_fields->pcpmod) {
 			m_fields->pcpposMenu->setValue(
@@ -157,6 +164,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 
 		this->Transition(true, true);
 		m_fields->map->helpTransition(true);
+
+		log::debug("naxrin finish hooking this");
 
 		#ifdef GEODE_IS_WINDOWS
 		if (Mod::get()->getSettingValue<bool>("dont-crash"))
@@ -241,52 +250,46 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.2, ccp(0.f, 30.f * in))));
 		}
 
+
 		this->m_fields->titleLabel->stopAllActions();
 		this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.35 * (in + 1))));
 		this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
-
-		this->m_fields->posMenu->stopAllActions();
-		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 110.f))));		
-		if (!m_fields->pcp)
-			this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
-
-		if (this->m_fields->pcpposMenu) {
-			this->m_fields->pcpposMenu->stopAllActions();
-			this->m_fields->pcpposMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 110.f))));
-			if (m_fields->pcp)
-				this->m_fields->pcpposMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));			
-		}
-
-		this->m_fields->opacityMenu->stopAllActions();
-		this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 80.f))));
-		if (!m_fields->pcp)
-			this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
-
-		if (auto menu = this->m_mainLayer->getChildByID("switcher-scale")) {
-			menu->stopAllActions();
-			menu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 80.f))));
-			if (!m_fields->pcp)
-				menu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
-		}
+		
+		switchPCP();
+		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
+		this->m_fields->pcpposMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
+		this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
+		if (auto menu = this->m_mainLayer->getChildByID("switcher-scale"))
+			menu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
 
 		this->m_buttonMenu->stopAllActions();
 		this->m_buttonMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.5 * (in + 1))));
 		this->m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 45.f))));
 	}
 
-	bool ccTouchBegan(CCTouch* touch, CCEvent* event) override {
-        return true;
-    }
+	bool ccTouchBegan(CCTouch* touch, CCEvent* event) override { return true; }
 
 	void ccTouchMoved(CCTouch* touch, CCEvent* event) override { }
 
 	void ccTouchEnded(CCTouch* touch, CCEvent* event) override { }
 	
 	// this empty override makes pcp inputers wholy not clickable, really sucks
-	//void textChanged(CCTextInputNode* input) override { }
+	/*
+	void textChanged(CCTextInputNode* input) override {
+		//UIPOptionsLayer::textChanged(input);
+		log::debug("text changed");
+	}
+
+	void textInputOpened(CCTextInputNode* input) override {
+		log::debug("text input opened");
+	}
+
+	void textInputClosed(CCTextInputNode* input) override {
+		log::debug("text input closed");
+	}*/
 
     void onOptions(CCObject*) {
-		//m_fields->pcp = 1-m_fields->pcp;
+		//m_fields->pcp = !m_fields->pcp;
 		//this->switchPCP();
 		geode::openSettingsPopup(Mod::get(), false);
 	}
@@ -329,18 +332,16 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	}
 
 	void switchPCP() {
-		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, !m_fields->pcp)));
-		this->m_fields->pcpposMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, m_fields->pcp)));
-		this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, !m_fields->pcp)));
-		if (auto menu = this->m_mainLayer->getChildByID("switcher-scale"))
-			menu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, m_fields->pcp)));
-
-		/*
 		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3,
-			ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + !m_fields->pcp * 110.f))));
+			ccp(m_fields->size.width * (0.5 - m_fields->pcp), m_fields->size.height / 4 + 10.f - m_fields->in_prev * 110.f))));
 		this->m_fields->pcpposMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3,
-			ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + m_fields->pcp * 110.f))));
-		*/
+			ccp(m_fields->size.width * (1.5 - m_fields->pcp), m_fields->size.height / 4 + 10.f - m_fields->in_prev * 110.f))));
+
+		this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3,
+			ccp(m_fields->size.width * (0.5 - m_fields->pcp), m_fields->size.height / 4 - 20.f - m_fields->in_prev * 80.f))));
+		if (auto menu = this->m_mainLayer->getChildByID("switcher-scale"))
+			menu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3,
+			ccp(m_fields->size.width * (1.5 - m_fields->pcp), m_fields->size.height / 4 - 20.f - m_fields->in_prev * 80.f))));
 	}
 
 	void onClose(CCObject* obj) override {
