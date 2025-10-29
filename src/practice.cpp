@@ -315,8 +315,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 				->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.75f)));
 
 			m_fields->pcpposMenu->setValue(ccp(50.f, m_fields->size.height - 50.f));
-			m_mainLayer->getChildByID("switcher-scale")->getChildByType<TextInput*>(0)->setString("0.75");
-			m_mainLayer->getChildByID("switcher-scale")->getChildByType<Slider*>(0)->setValue(2.f / 11.f);
+			m_mainLayer->getChildByID("pcp-menu")->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_menu")->getChildByType<TextInput*>(0)->setString("0.75");
+			m_mainLayer->getChildByID("pcp-menu")->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_menu")->getChildByType<Slider*>(0)->setValue(2.f / 11.f);
 			m_fields->pcpmod->setSavedValue("switcherMenuPositionX", 50.f);
 			m_fields->pcpmod->setSavedValue("switcherMenuPositionY", m_fields->size.height - 50.f);
 			m_fields->pcpmod->setSavedValue("switcherMenuScale", 0.75f);
