@@ -54,7 +54,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 				if (m_fields->pcp != bool(event->tag)) {
 					m_fields->pcp = event->tag;
 					if (!m_fields->in_prev)
-						this->switchPCP();
+						this->setMenu(false);
 				}
 				// pcppos
 				if (event->tag)
@@ -98,38 +98,46 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		// relocate the practice node
 		this->m_practiceNode = m_fields->map->getChildByID("target");
 
-
+		// my own settings menu
+		auto menuOri = CCMenu::create();
+		menuOri->setPositionY(m_fields->size.height / 4 - 120.f);
+		menuOri->setContentSize(ccp(0.f, 0.f));
+		menuOri->setScale(0.f);
+		menuOri->setID("ori-menu");
+		this->m_mainLayer->addChild(menuOri);
 		// pos menu
 		m_fields->posMenu = PosInputBundle::create();
-		m_fields->posMenu->setPositionY(m_fields->size.height / 4 - 130.f);
-		m_fields->posMenu->setScale(0);
+		m_fields->posMenu->setPosition(ccp(0.f, 15.f));
 		m_fields->posMenu->setID("pos-menu");
         m_fields->posMenu->setValue(gm->m_practicePos);
-		this->m_mainLayer->addChild(m_fields->posMenu);
+		menuOri->addChild(m_fields->posMenu);
 
 		// opacity menu
 		m_fields->opacityMenu = InputSliderBundle::create("Opacity", 0, 1, 2);
-		m_fields->opacityMenu->setPositionY(m_fields->size.height / 4 - 50.f);
-		m_fields->opacityMenu->setScale(0);
+		m_fields->opacityMenu->setPosition(ccp(0.f, -15.f));
 		m_fields->opacityMenu->setID("opacity-menu");
 		m_fields->opacityMenu->setTag(0);
         m_fields->opacityMenu->setValue(gm->m_practiceOpacity);
-		this->m_mainLayer->addChild(m_fields->opacityMenu);
+		menuOri->addChild(m_fields->opacityMenu);
 
 		m_fields->pcpmod = Loader::get()->getLoadedMod("kevadroz.practicecheckpointpermanence");
 
+		auto menuPcp = CCMenu::create();
+		menuPcp->setPositionY(m_fields->size.height / 4 - 120.f);
+		menuPcp->setContentSize(ccp(0.f, 0.f));
+		menuPcp->setID("pcp-menu");
+		this->m_mainLayer->addChild(menuPcp);
+
 		// pos menu (create it anyway)
 		m_fields->pcpposMenu = PosInputBundle::create();
-		m_fields->pcpposMenu->setPositionX(m_fields->size.width * 1.5);
-		m_fields->pcpposMenu->setPositionY(m_fields->size.height / 4 - 130.f);
-		m_fields->pcpposMenu->setScale(1);
+		m_fields->pcpposMenu->setPosition(ccp(0.f, 15.f));
 		m_fields->pcpposMenu->setID("pcp-pos-menu");
 		if (m_fields->pcpmod) {
 			m_fields->pcpposMenu->setValue(
 				ccp(m_fields->pcpmod->getSavedValue<double>("switcherMenuPositionX"),
 				m_fields->pcpmod->getSavedValue<double>("switcherMenuPositionY")));
 		}
-		this->m_mainLayer->addChild(m_fields->pcpposMenu);
+		menuPcp->addChild(m_fields->pcpposMenu);
 
 		// buttons below
         std::map<int, std::pair<const char*, SEL_MenuHandler>> btnIndexes = {
@@ -191,8 +199,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		// escape from fullscreen preview
 		if (event->tag == -100) {
 			if (!event->value && this->m_fields->map->getScale() == 1) {
-				this->Transition(true, false);
-				m_fields->opl->setVisible(true);				
+				this->onClose(nullptr);
+				//m_fields->opl->setVisible(true);				
 			}
 		}
 		// x pos
@@ -252,13 +260,14 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.35 * (in + 1))));
 		this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
 		
-		switchPCP();
+		setMenu(true);
+		/*
 		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
 		this->m_fields->pcpposMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
 		this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
 		if (auto menu = this->m_mainLayer->getChildByID("switcher-scale"))
 			menu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
-
+		*/
 		this->m_buttonMenu->stopAllActions();
 		this->m_buttonMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.5 * (in + 1))));
 		this->m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 45.f))));
@@ -271,12 +280,13 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	void ccTouchEnded(CCTouch* touch, CCEvent* event) override { }
 
     void onOptions(CCObject*) {
-		//m_fields->pcp = !m_fields->pcp;
-		//this->switchPCP();
-		geode::openSettingsPopup(Mod::get(), false);
+		m_fields->pcp = !m_fields->pcp;
+		this->setMenu(false);
+		//geode::openSettingsPopup(Mod::get(), false);
 	}
 
 	void onPreview(CCObject*) {
+		m_fields->in_prev = true;
 		this->Transition(false, false);
 		m_fields->opl->setVisible(false);
 	}
@@ -313,21 +323,41 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		}
 	}
 
-	void switchPCP() {
-		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3,
-			ccp(m_fields->size.width * (0.5 - m_fields->pcp), m_fields->size.height / 4 + 10.f - m_fields->in_prev * 110.f))));
-		this->m_fields->pcpposMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3,
-			ccp(m_fields->size.width * (1.5 - m_fields->pcp), m_fields->size.height / 4 + 10.f - m_fields->in_prev * 110.f))));
+	void setMenu(bool move) {
+		bool ori = !m_fields->in_prev && !m_fields->pcp;
+		bool pcp = !m_fields->in_prev && m_fields->pcp;
+		if (move) {
+			this->m_mainLayer->getChildByID("ori-menu")->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3,
+				ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 10.f - m_fields->in_prev * 110.f))));
+			this->m_mainLayer->getChildByID("pcp-menu")->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3,
+				ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 10.f - m_fields->in_prev * 110.f))));	
+		}
 
-		this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3,
-			ccp(m_fields->size.width * (0.5 - m_fields->pcp), m_fields->size.height / 4 - 20.f - m_fields->in_prev * 80.f))));
-		if (auto menu = this->m_mainLayer->getChildByID("switcher-scale"))
-			menu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3,
-			ccp(m_fields->size.width * (1.5 - m_fields->pcp), m_fields->size.height / 4 - 20.f - m_fields->in_prev * 80.f))));
+		this->m_mainLayer->getChildByID("ori-menu")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, ori)));
+		this->m_mainLayer->getChildByID("pcp-menu")->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, pcp)));
+
+		if (ori)
+			this->m_mainLayer->getChildByID("ori-menu")->setVisible(true);
+		else
+			this->m_mainLayer->getChildByID("ori-menu")->runAction(CCSequence::create(
+				CCDelayTime::create(0.3),
+				CallFuncExt::create([this] () { this->m_mainLayer->getChildByID("ori-menu")->setVisible(false); }),
+				nullptr
+			));
+
+		if (pcp)
+			this->m_mainLayer->getChildByID("pcp-menu")->setVisible(true);
+		else
+			this->m_mainLayer->getChildByID("pcp-menu")->runAction(CCSequence::create(
+				CCDelayTime::create(0.3),
+				CallFuncExt::create([this] () { this->m_mainLayer->getChildByID("pcp-menu")->setVisible(false); }),
+				nullptr
+			));
 	}
 
 	void onClose(CCObject* obj) override {
-		if (m_fields->map->getScale() > 0.5) {
+		this->m_fields->in_prev = !this->m_fields->in_prev;
+		if (!this->m_fields->in_prev) {
 			this->Transition(true, false);
 			m_fields->opl->setVisible(true);
 		}
@@ -341,7 +371,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	}
 
 	void keyBackClicked() override {
-		if (m_fields->map->getScale() > 0.5) {
+		this->m_fields->in_prev = !this->m_fields->in_prev;
+		if (!this->m_fields->in_prev) {
 			this->Transition(true, false);
 			m_fields->opl->setVisible(true);
 		}
