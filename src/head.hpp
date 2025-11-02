@@ -44,6 +44,10 @@ protected:
 public:
     // direct set its value
     void setValue(const CCPoint &pos);
+    void setEnabled2(bool enabled) {
+        m_inputX->setEnabled(enabled);
+        m_inputY->setEnabled(enabled);
+    }
     // create it
     static PosInputBundle* create() {
         auto node = new PosInputBundle();

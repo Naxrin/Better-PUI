@@ -402,8 +402,17 @@ void PracticePreviewFrame::placeNode(const CCPoint& pos) {
 }
 
 void PracticePreviewFrame::alphaNode(GLubyte opacity, float d) {
+    for (auto child : CCArrayExt<CCSprite*>(m_target->getChildren()))
+        child->runAction(CCEaseExponentialOut::create(CCFadeTo::create(d, opacity)));
+    /*
     this->m_sprL->runAction(CCEaseExponentialOut::create(CCFadeTo::create(d, opacity)));
     this->m_sprR->runAction(CCEaseExponentialOut::create(CCFadeTo::create(d, opacity)));
+	if (Loader::get()->isModLoaded("kevadroz.practicecheckpointpermanence")) {
+		static_cast<CCSprite*>(m_target->getChildByID("kevadroz.practicecheckpointpermanence/markPersistentCheckpoint"))
+            ->runAction(CCEaseExponentialOut::create(CCFadeTo::create(d, opacity)));
+		static_cast<CCSprite*>(m_target->getChildByID("kevadroz.practicecheckpointpermanence/removePersistentCheckpoint"))
+            ->runAction(CCEaseExponentialOut::create(CCFadeTo::create(d, opacity)));
+	}*/
 }
 
 bool PlatformPreviewFrame::init(bool preview) {

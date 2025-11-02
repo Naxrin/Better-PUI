@@ -116,7 +116,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		m_fields->opacityMenu = InputSliderBundle::create("Opacity", 0, 1, 2);
 		m_fields->opacityMenu->setPosition(ccp(0.f, -15.f));
 		m_fields->opacityMenu->setID("opacity-menu");
-		m_fields->opacityMenu->setTag(0);
+		m_fields->opacityMenu->setTag(1);
         m_fields->opacityMenu->setValue(gm->m_practiceOpacity);
 		menuOri->addChild(m_fields->opacityMenu);
 
@@ -187,7 +187,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 				if (child->getTag() != 10)
 					child->setColor(val);
 
-			if (auto node = typeinfo_cast<CCLabelBMFont*>(this->m_mainLayer->getChildByID("switcher-scale")
+			if (auto node = typeinfo_cast<CCLabelBMFont*>(this->m_mainLayer->getChildByID("pcp-menu")
+				->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_menu")
 				->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_label")))
 				node->setColor(val);
 		});
@@ -249,6 +250,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		if (whole) {
 			this->m_fields->map->stopAllActions();
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.25 * (in + 1))));
+			if (auto child = this->m_fields->map->getChildByID("kevadroz.practicecheckpointpermanence/switcher_menu"))
+				child->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
 		} else {
 			this->m_fields->map->stopAllActions();
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 1 - 0.5 * in)));
@@ -280,9 +283,9 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	void ccTouchEnded(CCTouch* touch, CCEvent* event) override { }
 
     void onOptions(CCObject*) {
-		m_fields->pcp = !m_fields->pcp;
-		this->setMenu(false);
-		//geode::openSettingsPopup(Mod::get(), false);
+		//m_fields->pcp = !m_fields->pcp;
+		//this->setMenu(false);
+		geode::openSettingsPopup(Mod::get(), false);
 	}
 
 	void onPreview(CCObject*) {
