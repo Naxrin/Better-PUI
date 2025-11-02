@@ -237,9 +237,9 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
             this->valueDidChange(-29, event->value);
 			if (auto pl = PlayLayer::get()) {
 				static_cast<CCSprite*>(pl->m_uiLayer->getChildByID("checkpoint-menu")->getChildByID("add-checkpoint-button")
-					->getChildByID("add-checkpoint-hint"))->setPositionY(event->value);
+					->getChildByID("add-checkpoint-hint"))->setOpacity(event->value);
 				static_cast<CCSprite*>(pl->m_uiLayer->getChildByID("checkpoint-menu")->getChildByID("remove-checkpoint-button")
-					->getChildByID("remove-checkpoint-hint"))->setPositionY(event->value);
+					->getChildByID("remove-checkpoint-hint"))->setOpacity(event->value);
 			}
 		}
 		return ListenerResult::Stop;
