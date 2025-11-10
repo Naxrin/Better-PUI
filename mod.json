@@ -8,9 +8,10 @@
 	},
 	"id": "naxrin.better_pui",
 	"name": "Better Platform & Practice Config UI",
-	"version": "v3.3.0",
+	"version": "v3.3.1",
 	"developer": "Naxrin",
 	"description": "Better Platform/Practice Buttons config UI",
+	"tags": ["interface", "offline"],
 	"resources": {
 		"sprites": [
 			"resources/*"
@@ -29,10 +30,9 @@
 	"settings": {
 		"dont-crash": {
 			"name": "Crash Protect",
-			"description": "Windows only, listeners are not destructed on menu close and ghost listeners will crash the game.\nCheck it then setting listeners will not be created, and settings change will not work instantly",
+			"description": "Listeners are not destructed on menu close and ghost listeners will crash the game.\nCheck it then setting listeners will not be created, and settings change will not work instantly",
 			"type": "bool",
-			"default": true,
-			"platforms": ["win"]
+			"default": true
 		},
 		"bg-title": {
 			"name": "Background",

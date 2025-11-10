@@ -36,12 +36,6 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		bool pcp;
 	};
 
-	/*
-	static void onModify(auto& self) {
-		if (!self.setHookPriority("UIPOptionsLayer::init", Priority::Late))
-			geode::log::warn("Failed to set hook priority.");		
-	}*/
-
 	bool init() override {
 		if (!SetupTriggerPopup::init(nullptr, nullptr, 420.f, 280.f, 1))
 			return false;
@@ -173,12 +167,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		this->Transition(true, true);
 		m_fields->map->helpTransition(true);
 
-		log::debug("naxrin finish hooking this");
-
-		#ifdef GEODE_IS_WINDOWS
 		if (Mod::get()->getSettingValue<bool>("dont-crash"))
 			return true;
-		#endif
 
 		listenForSettingChangesV3("bg-color", [this] (ccColor3B val) { this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b)); });
 		listenForSettingChangesV3("bg-opacity", [this] (int val) { this->runAction(CCFadeTo::create(0.2, val * 255 / 100.f)); });
@@ -187,10 +177,11 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 				if (child->getTag() != 10)
 					child->setColor(val);
 
-			if (auto node = typeinfo_cast<CCLabelBMFont*>(this->m_mainLayer->getChildByID("pcp-menu")
-				->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_menu")
-				->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_label")))
-				node->setColor(val);
+			if (m_fields->pcpmod)
+				if (auto node = typeinfo_cast<CCLabelBMFont*>(this->m_mainLayer->getChildByID("pcp-menu")
+					->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_menu")
+					->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_label")))
+					node->setColor(val);
 		});
 
 		return true;
@@ -199,10 +190,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	ListenerResult handleSignal(Signal* event) {
 		// escape from fullscreen preview
 		if (event->tag == -100) {
-			if (!event->value && this->m_fields->map->getScale() == 1) {
+			if (!event->value && this->m_fields->map->getScale() == 1)
 				this->onClose(nullptr);
-				//m_fields->opl->setVisible(true);				
-			}
 		}
 		// x pos
 		else if (event->tag == 114) {

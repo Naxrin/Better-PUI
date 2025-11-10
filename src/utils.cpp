@@ -34,10 +34,8 @@ bool PosInputBundle::init() {
     m_inputY->setDelegate(this);
     this->addChild(m_inputY);
     
-    #ifdef GEODE_IS_WINDOWS
     if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
-    #endif
 
     listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
         this->m_labelX->setColor(color);
@@ -88,10 +86,8 @@ bool InputSliderBundle::init(const char* title, float min, float max, int accu) 
     m_slider->setScale(0.6f);
     this->addChild(m_slider);
 
-    #ifdef GEODE_IS_WINDOWS
     if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
-    #endif
 
     listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
         this->m_label->setColor(color);
@@ -204,10 +200,8 @@ bool PreviewFrame::init() {
     this->setTouchEnabled(true);
     this->setTouchMode(ccTouchesMode::kCCTouchesOneByOne);
 
-    #ifdef GEODE_IS_WINDOWS
     if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
-    #endif
 
     listenForSettingChangesV3("hori-distance", [this] (int) {
         this->vert.clear();
@@ -404,15 +398,6 @@ void PracticePreviewFrame::placeNode(const CCPoint& pos) {
 void PracticePreviewFrame::alphaNode(GLubyte opacity, float d) {
     for (auto child : CCArrayExt<CCSprite*>(m_target->getChildren()))
         child->runAction(CCEaseExponentialOut::create(CCFadeTo::create(d, opacity)));
-    /*
-    this->m_sprL->runAction(CCEaseExponentialOut::create(CCFadeTo::create(d, opacity)));
-    this->m_sprR->runAction(CCEaseExponentialOut::create(CCFadeTo::create(d, opacity)));
-	if (Loader::get()->isModLoaded("kevadroz.practicecheckpointpermanence")) {
-		static_cast<CCSprite*>(m_target->getChildByID("kevadroz.practicecheckpointpermanence/markPersistentCheckpoint"))
-            ->runAction(CCEaseExponentialOut::create(CCFadeTo::create(d, opacity)));
-		static_cast<CCSprite*>(m_target->getChildByID("kevadroz.practicecheckpointpermanence/removePersistentCheckpoint"))
-            ->runAction(CCEaseExponentialOut::create(CCFadeTo::create(d, opacity)));
-	}*/
 }
 
 bool PlatformPreviewFrame::init(bool preview) {
@@ -703,10 +688,8 @@ bool SlotFrame::init(int nametag) {
     this->loadBtn->setColor(color);
     this->addChild(this->loadBtn);
 
-    #ifdef GEODE_IS_WINDOWS
     if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
-    #endif
 
 	listenForSettingChangesV3("slot-color", [this] (ccColor4B val) {
         this->bg->setColor(to3B(val)); this->bg->setOpacity(val.a); });

@@ -278,10 +278,8 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		} else
 			this->m_fields->map->updateState(0, gm->m_dpad1);
 
-		#ifdef GEODE_IS_WINDOWS
 		if (Mod::get()->getSettingValue<bool>("dont-crash"))
 			return true;
-		#endif
 
 		listenForSettingChangesV3("bg-color", [this] (ccColor3B val) { this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b)); });
 		listenForSettingChangesV3("bg-opacity", [this] (int val) { this->runAction(CCFadeTo::create(0.2, val * 255 / 100.f)); });
