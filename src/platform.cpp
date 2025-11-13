@@ -31,13 +31,13 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		PlatformPreviewFrame* map, * preview;
 
 		// some sprites
-		CCMenuItemSpriteExtra* dualBtn, * snap0Btn;
+		CCMenuItemSpriteExtra* dualBtn, * snapBtn;
 
 		// labels
 		CCLabelBMFont* modeLabel, * snapLabel, * splitLabel, * jumplLabel, * symmetryLabel;
 
-		// the btns
-		CCMenuItemSpriteExtra* modeBtn, * snapBtn, * splitBtn, * jumplBtn, * symmetryBtn;
+		// the btns from label sprites
+		CCMenuItemSpriteExtra* modeBtn, * snap0Btn, * splitBtn, * jumplBtn, * symmetryBtn;
 
 		// slots
 		SlotFrame* slots[3];
@@ -176,9 +176,9 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 
 		m_fields->snapLabel = CCLabelBMFont::create("Snap", "bigFont.fnt");
 		m_fields->snapLabel->setScale(0.6);
-		m_fields->snapBtn = CCMenuItemSpriteExtra::create(m_fields->snapLabel, this, menu_selector(PlatformOptionsLayer::onSnap0));
-		m_fields->snapBtn->setTag(-24);
-		optMenu->addChildAtPosition(m_fields->snapBtn, Anchor::Center, ccp(-60.f, 0.f));
+		m_fields->snap0Btn = CCMenuItemSpriteExtra::create(m_fields->snapLabel, this, menu_selector(PlatformOptionsLayer::onSnap0));
+		m_fields->snap0Btn->setTag(-24);
+		optMenu->addChildAtPosition(m_fields->snap0Btn, Anchor::Center, ccp(-60.f, 0.f));
 
 		m_fields->splitLabel = CCLabelBMFont::create("Split", "bigFont.fnt");
 		m_fields->splitLabel->setScale(0.6);
@@ -322,11 +322,11 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 					this->m_fields->radiusMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, event->value < 3)));
 					// togglers
 					this->m_fields->modeBtn->setTag(-17 - p2);
-					this->m_fields->snapBtn->setTag(-24 - p2);
+					this->m_fields->snap0Btn->setTag(-24 - p2);
 					this->m_fields->splitBtn->setTag(-27 - p2);
 					// buttons
 					this->m_fields->modeBtn->setEnabled(event->value < 3);
-					this->m_fields->snapBtn->setEnabled(event->value < 3);
+					this->m_fields->snap0Btn->setEnabled(event->value < 3);
 					this->m_fields->splitBtn->setEnabled(event->value < 3);
 					if (event->value < 3) {
 						this->m_fields->modeLabel->runAction(this->m_fields->config[m_fields->id]->m_modeB ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
@@ -691,7 +691,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		this->m_fields->radiusMenu->setTag(-19);
 		// togglers
 		this->m_fields->modeBtn->setTag(-17);
-		this->m_fields->snapBtn->setTag(-24);
+		this->m_fields->snap0Btn->setTag(-24);
 		this->m_fields->splitBtn->setTag(-27);
 		// official options
 		m_fields->jumplBtn->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, m_fields->id == 0)));

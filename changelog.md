@@ -1,5 +1,8 @@
 Through further debug test, setting listeners are proved to crash cross platforms, not only Windows. So please **ALWAYS** keep the Crash Protect option ON for now.  
 Will look into a fix.
+# 3.3.2
+- Fix snap button in Platformer config page crashing the game (stupid mistake)
+- Better mod desc
 
 # 3.3.1
 - Crash Protect option is now available cross platforms
