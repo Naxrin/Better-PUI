@@ -775,7 +775,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
         Mod::get()->setSavedValue("snap", !on);
 		this->m_fields->map->setGridVisibility(!on);
 		// tint color
-		this->m_fields->snap0Btn->runAction(CCTintTo::create(0.4, 128 + 127 * on, 255 - 127 * on, 128));
+		this->m_fields->snapBtn->runAction(CCTintTo::create(0.4, 128 + 127 * on, 255 - 127 * on, 128));
 	}
 
 	void onResetNew(CCObject*) {
