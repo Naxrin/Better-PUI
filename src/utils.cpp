@@ -34,7 +34,7 @@ bool PosInputBundle::init() {
     m_inputY->setDelegate(this);
     this->addChild(m_inputY);
     
-    if (Mod::get()->getSettingValue<bool>("dont-crash"))
+    //if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
 
     listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
@@ -86,7 +86,7 @@ bool InputSliderBundle::init(const char* title, float min, float max, int accu) 
     m_slider->setScale(0.6f);
     this->addChild(m_slider);
 
-    if (Mod::get()->getSettingValue<bool>("dont-crash"))
+    //if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
 
     listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
@@ -409,22 +409,22 @@ bool PlatformPreviewFrame::init(bool preview) {
     // target nodes
     this->p1mNode = GJUINode::create(current ? gm->m_dpad2 : gm->m_dpad1);
     p1mNode->setTag(current);
-    this->alphaNode(p1mNode, 0);
+    this->alphaNode(p1mNode, 0, 0);
     this->addChild(p1mNode);
 
     this->p2mNode = GJUINode::create(gm->m_dpad3);
     p2mNode->setTag(2);
-    this->alphaNode(p2mNode, 0);
+    this->alphaNode(p2mNode, 0, 0);
     this->addChild(p2mNode);
 
     this->p1jNode = GJUINode::create(gm->m_dpad4);
     p1jNode->setTag(3);
-    this->alphaNode(p1jNode, 0);
+    this->alphaNode(p1jNode, 0, 0);
     this->addChild(p1jNode);
 
     this->p2jNode = GJUINode::create(gm->m_dpad5);
     p2jNode->setTag(4);
-    this->alphaNode(p2jNode, 0);
+    this->alphaNode(p2jNode, 0, 0);
     this->addChild(p2jNode);
 
     return true;
@@ -710,19 +710,19 @@ void SlotFrame::parseSingleBtn(UIButtonConfig &config, std::string raw) {
         return;
     }
     // regex
-    std::regex pt(config.m_oneButton ? R"w(^(\d+),(\d+),(\d+.?\d{0,2})\d*,(\d+.?\d{0,2})\d*,(-?\d+.?\d{0,2})\d*,(-?\d+.?\d{0,2})\d*$)w"
-        : R"w(^(\d+),(\d+),(\d+.?\d{0,2})\d*,(\d+.?\d{0,2})\d*,(-?\d+.?\d{0,2})\d*,(-?\d+.?\d{0,2})\d*,([01]),(\d+.?\d{0,1})\d*,(\d+.?\d{0,1})\d*,([01]),([01])$)w");
+    std::regex pt(config.m_oneButton ? R"w(^(\d+),(\d+),(\d+.?\d*),(\d+),(-?\d+.?\d*),(-?\d+.?\d*)$)w"
+        : R"w(^(\d+),(\d+),(\d+.?\d*),(\d+),(-?\d+.?\d*),(-?\d+.?\d*),([01]),(\d+.?\d*),(\d+.?\d*),([01]),([01])$)w");
     std::smatch match;
 
     this->real = std::regex_match(raw, match, pt);
-    //log::debug("parse single raw str = {} ret = {}", raw, this->real);
     if (!this->real)
         return;
+
     // data fill to be fixed
     config.m_width = numFromString<int>(match.str(1)).unwrapOrDefault();
     config.m_height = numFromString<int>(match.str(2)).unwrapOrDefault();
     config.m_scale = numFromString<float>(match.str(3)).unwrapOrDefault();
-    config.m_opacity = 255 * (numFromString<float>(match.str(4)).unwrapOrDefault() > 1 ? 1 : numFromString<float>(match.str(4)).unwrapOrDefault());
+    config.m_opacity = std::min(numFromString<int>(match.str(4)).unwrapOrDefault(), 255);
     config.m_position = ccp(numFromString<float>(match.str(5)).unwrapOrDefault(), numFromString<float>(match.str(6)).unwrapOrDefault());
     if (!config.m_oneButton) {
         config.m_modeB = numFromString<int>(match.str(7)).unwrapOrDefault();
@@ -735,7 +735,7 @@ void SlotFrame::parseSingleBtn(UIButtonConfig &config, std::string raw) {
 
 std::string SlotFrame::dumpSingleBtn(UIButtonConfig const &config) {
     return fmt::format("{},{},{},{},{},{}",
-        config.m_width, config.m_height, config.m_scale, config.m_opacity / 255, config.m_position.x, config.m_position.y)
+        config.m_width, config.m_height, config.m_scale, config.m_opacity, config.m_position.x, config.m_position.y)
         + (config.m_oneButton ? "" : fmt::format(",{},{},{},{},{}",
         int(config.m_modeB), config.m_deadzone, config.m_radius, int(config.m_snap), int(config.m_snap)));
 }
@@ -750,7 +750,6 @@ void SlotFrame::parse() {
     // match
     std::string str = fmt::format("{}", *this->raw);
     this->real = std::regex_match(str, match, pt);
-    //log::debug("parse full raw str = {} ret = {}", *raw, this->real);
     if (!this->real)
         return;
     // parse
@@ -772,7 +771,7 @@ void SlotFrame::refreshDescLabel() {
         "P1M p={},{} w={} h={} s={} o={} m={} dz={} r={} sn={} sp={}\n"
         "P2M p={},{} w={} h={} s={} o={} m={} dz={} r={} sn={} sp={}\n"
         "P1J p={},{} w={} h={} s={} o={}\n"
-        "P1J p={},{} w={} h={} s={} o={}",
+        "P2J p={},{} w={} h={} s={} o={}",
         numToString<float>(p1m.m_position.x, 2), numToString<float>(p1m.m_position.y, 2), p1m.m_width, p1m.m_height, p1m.m_scale, p1m.m_opacity,
         p1m.m_modeB, p1m.m_deadzone, p1m.m_radius, p1m.m_snap, p1m.m_split,
         numToString<float>(p2m.m_position.x, 2), numToString<float>(p2m.m_position.y, 2), p2m.m_width, p2m.m_height, p2m.m_scale, p2m.m_opacity,
@@ -921,6 +920,7 @@ void SlotFrame::resume() {
 void SlotFrame::onSave(CCObject*) {
     this->real = true;
 
+    log::debug("will write this->raw #{} {} = {}", getTag(), this->dual, gm->m_dpadLayoutDual1);
     if (this->dual) {
         this->p1m = gm->m_dpad2;
         this->p2m = gm->m_dpad3;
@@ -936,6 +936,7 @@ void SlotFrame::onSave(CCObject*) {
         *this->raw = fmt::format("{};{}", dumpSingleBtn(this->p1m), int(this->jumpL));    
     }
 
+    log::debug("written this->raw #{} {} = {}", getTag(), this->dual, gm->m_dpadLayoutDual1);
     this->refreshDescLabel();
     Signal(94, this->getTag() + this->showing * 3).post();
 }

@@ -1,5 +1,11 @@
 Through further debug test, setting listeners are proved to crash cross platforms, not only Windows. So please **ALWAYS** keep the Crash Protect option ON for now.  
 Will look into a fix.
+
+# 3.3.3
+- Fix opacity save issue
+- Fix save slot P2J text issue
+- Fix button opacity not displayed properly in Plat UI
+
 # 3.3.2
 - Fix snap button in Platformer config page crashing the game (stupid mistake)
 - Better mod desc

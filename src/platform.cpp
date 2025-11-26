@@ -69,6 +69,14 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
                 return ListenerResult::Stop;
             });
 
+		
+		log::debug("m_dpadLayout1 = {}", gm->m_dpadLayout1);
+		log::debug("m_dpadLayout2 = {}", gm->m_dpadLayout2);
+		log::debug("m_dpadLayout3 = {}", gm->m_dpadLayout3);
+		log::debug("m_dpadLayoutDual1 = {}", gm->m_dpadLayoutDual1);
+		log::debug("m_dpadLayoutDual2 = {}", gm->m_dpadLayoutDual2);
+		log::debug("m_dpadLayoutDual3 = {}", gm->m_dpadLayoutDual3);
+		
 		// game options layer below
 		m_fields->opl = CCScene::get()->getChildByType<GameOptionsLayer>(0);
 
