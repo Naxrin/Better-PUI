@@ -1,7 +1,7 @@
-#include <Geode/ui/GeodeUI.hpp>
-#include <geode.devtools/include/API.hpp>
 #include "head.hpp"
+#include <Geode/ui/GeodeUI.hpp>
 
+// platform
 #include <Geode/modify/UIOptionsLayer.hpp>
 class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 	struct Fields {
@@ -22,7 +22,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		bool inprev;
 
 		// title
-        CCLabelBMFont* titleLabel;
+          CCLabelBMFont* titleLabel;
 		// planar menus
 		PosInputBundle* posMenu;
 		// input slider menus
@@ -41,34 +41,35 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 
 		// slots
 		SlotFrame* slots[3];
-		// radio
-		EventListener<EventFilter<Signal>> radio;
-        // pos radio
-        EventListener<EventFilter<PosSignal>> radioPos;
+		// radios
+		ListenerHandle radioReal, radioPos;
 	};
 
 	bool init(bool p) {
 		if (!SetupTriggerPopup::init(nullptr, nullptr, 420.f, 280.f, 1))
 			return false;
 		
-		this->m_fields->radio = EventListener<EventFilter<Signal>>(
-            [this](Signal* event) -> ListenerResult { return this->handleSignal(event); });
+		this->m_fields->radioReal = Signal().listen(
+            [this](int tag, float value) -> ListenerResult {
+			this->handleSignal(tag, value);
+            return ListenerResult::Stop;
+		});
 
-		this->m_fields->radioPos = EventListener<EventFilter<PosSignal>>(
-            [this](PosSignal* event) -> ListenerResult {
+		this->m_fields->radioPos = PosSignal().listen(
+			[this] (int tag, CCPoint pos) -> ListenerResult {
 				//log::debug("pos signal {}", event->tag);
-                this->m_fields->posMenu->setValue(event->pos);
-                this->m_fields->config[m_fields->id]->m_position = m_fields->id == 2 || m_fields->id == 4 ? ccp(m_fields->size.width - event->pos.x, event->pos.y) : event->pos;
+                this->m_fields->posMenu->setValue(pos);
+                this->m_fields->config[m_fields->id]->m_position = m_fields->id == 2 || m_fields->id == 4 ? ccp(m_fields->size.width - pos.x, pos.y) : pos;
 				// symmetric dual
-				if (!event->tag || !m_fields->id || !Mod::get()->getSavedValue<bool>("symmetry"))
+				if (!tag || !m_fields->id || !Mod::get()->getSavedValue<bool>("symmetry"))
 					return ListenerResult::Stop;
 				auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
 				//log::debug("mirror = {}", mirror);
-				this->m_fields->config[mirror]->m_position = m_fields->id == 2 || m_fields->id == 4 ? ccp(m_fields->size.width - event->pos.x, event->pos.y) : event->pos;
-				this->m_fields->map->placeNode(mirror, ccp(m_fields->size.width - event->pos.x, event->pos.y), 0.2);
+				this->m_fields->config[mirror]->m_position = m_fields->id == 2 || m_fields->id == 4 ? ccp(m_fields->size.width - pos.x, pos.y) : pos;
+				this->m_fields->map->placeNode(mirror, ccp(m_fields->size.width - pos.x, pos.y), 0.2);
                 return ListenerResult::Stop;
-            });
-
+			}
+		);
 		
 		log::debug("m_dpadLayout1 = {}", gm->m_dpadLayout1);
 		log::debug("m_dpadLayout2 = {}", gm->m_dpadLayout2);
@@ -289,6 +290,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		if (Mod::get()->getSettingValue<bool>("dont-crash"))
 			return true;
 
+		/*
 		listenForSettingChangesV3("bg-color", [this] (ccColor3B val) { this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b)); });
 		listenForSettingChangesV3("bg-opacity", [this] (int val) { this->runAction(CCFadeTo::create(0.2, val * 255 / 100.f)); });
 		listenForSettingChangesV3("ui-color", [this] (ccColor3B val) {
@@ -296,47 +298,47 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 				if (child->getTag() != 10)
 					child->setColor(val);
 		});
-
+		*/
 		return true;
 	}
 
-	ListenerResult handleSignal(Signal* event) {
+	void handleSignal(int tag, float value) {
 		//log::debug("handle signal {} {}", event->tag, event->value);
 		// escape from fullscreen preview
-		if (event->tag == -100) {
-			if (event->value == -514 && !this->m_fields->slpage)
-				return ListenerResult::Stop;
+		if (tag == -100) {
+			if (value == -514 && !this->m_fields->slpage)
+				return;
 			// will drag a node
-			if (event->value > 0) {
+			if (value > 0) {
 				// dual mode only
 				// should switch ui info to the dragged node
 				if (this->m_fields->id) {
-					this->m_fields->id = event->value;
+					this->m_fields->id = value;
 					//log::info("switch id = {}", m_fields->id);
-					bool p2 = event->value == 2 || event->value == 4;
-					this->m_nameLabel->setString(fmt::format("P{} {}", p2 ? "2" : "1", event->value < 3 ? "Move" : "Jump").c_str());
+					bool p2 = value == 2 || value == 4;
+					this->m_nameLabel->setString(fmt::format("P{} {}", p2 ? "2" : "1", value < 3 ? "Move" : "Jump").c_str());
 					this->refreshValue();
 					// input slider bundles tag
-					this->m_fields->widthMenu->setTag(-event->value);
-					this->m_fields->heightMenu->setTag(-event->value - 4);
-					this->m_fields->scaleMenu->setTag(-event->value - 8);
-					this->m_fields->opacityMenu->setTag(-event->value - 12);
+					this->m_fields->widthMenu->setTag(-value);
+					this->m_fields->heightMenu->setTag(-value - 4);
+					this->m_fields->scaleMenu->setTag(-value - 8);
+					this->m_fields->opacityMenu->setTag(-value - 12);
 					this->m_fields->deadzoneMenu->setTag(-int(p2) - 21);
 					this->m_fields->radiusMenu->setTag(-int(p2) - 19);
 
-					static_cast<TextInput*>(this->m_fields->deadzoneMenu->getChildByID("inputer"))->setEnabled(event->value < 3);
-					static_cast<TextInput*>(this->m_fields->radiusMenu->getChildByID("inputer"))->setEnabled(event->value < 3);
-					this->m_fields->deadzoneMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, event->value < 3)));
-					this->m_fields->radiusMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, event->value < 3)));
+					static_cast<TextInput*>(this->m_fields->deadzoneMenu->getChildByID("inputer"))->setEnabled(value < 3);
+					static_cast<TextInput*>(this->m_fields->radiusMenu->getChildByID("inputer"))->setEnabled(value < 3);
+					this->m_fields->deadzoneMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, value < 3)));
+					this->m_fields->radiusMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, value < 3)));
 					// togglers
 					this->m_fields->modeBtn->setTag(-17 - p2);
 					this->m_fields->snap0Btn->setTag(-24 - p2);
 					this->m_fields->splitBtn->setTag(-27 - p2);
 					// buttons
-					this->m_fields->modeBtn->setEnabled(event->value < 3);
-					this->m_fields->snap0Btn->setEnabled(event->value < 3);
-					this->m_fields->splitBtn->setEnabled(event->value < 3);
-					if (event->value < 3) {
+					this->m_fields->modeBtn->setEnabled(value < 3);
+					this->m_fields->snap0Btn->setEnabled(value < 3);
+					this->m_fields->splitBtn->setEnabled(value < 3);
+					if (value < 3) {
 						this->m_fields->modeLabel->runAction(this->m_fields->config[m_fields->id]->m_modeB ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
 						this->m_fields->snapLabel->runAction(this->m_fields->config[m_fields->id]->m_snap ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
 						this->m_fields->splitLabel->runAction(this->m_fields->config[m_fields->id]->m_split ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
@@ -349,51 +351,51 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			}
 			// escape fullscreen preview
 			else {
-				//log::debug("escape fullscreen preview {} {}", event->value, this->m_fields->slpage);
+				//log::debug("escape fullscreen preview {} {}", value, this->m_fields->slpage);
 
-				if (event->value == -114 && !this->m_fields->slpage && this->m_fields->inprev)
+				if (value == -114 && !this->m_fields->slpage && this->m_fields->inprev)
 					this->Transition(true, false);
-				else if (event->value == -514 && this->m_fields->slpage && this->m_fields->inprev)
+				else if (value == -514 && this->m_fields->slpage && this->m_fields->inprev)
 					this->TransitionSlots(true, true);
 			}
 		}
 		// x pos
-		else if (event->tag == 114) {
+		else if (tag == 114) {
             auto m = this->m_fields->map;
-			this->m_fields->config[m_fields->id]->m_position.x = m_fields->id == 2 || m_fields->id == 4 ? m_fields->size.width - event->value : event->value;
-			m->placeNode(m_fields->id, ccp(event->value, m->getChildByTag(m_fields->id)->getPositionY()), 0.2);
+			this->m_fields->config[m_fields->id]->m_position.x = m_fields->id == 2 || m_fields->id == 4 ? m_fields->size.width - value : value;
+			m->placeNode(m_fields->id, ccp(value, m->getChildByTag(m_fields->id)->getPositionY()), 0.2);
 			// symmetric dual
 			if (!m_fields->id || !Mod::get()->getSavedValue<bool>("symmetry"))
-				return ListenerResult::Stop;
+				return;
 			auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
-			this->m_fields->config[mirror]->m_position = ccp(m_fields->id == 2 || m_fields->id == 4 ? m_fields->size.width - event->value : event->value, this->m_fields->config[m_fields->id]->m_position.y);
-			this->m_fields->map->placeNode(mirror, ccp(m_fields->size.width - event->value, this->m_fields->config[m_fields->id]->m_position.y), 0.2);
+			this->m_fields->config[mirror]->m_position = ccp(m_fields->id == 2 || m_fields->id == 4 ? m_fields->size.width - value : value, this->m_fields->config[m_fields->id]->m_position.y);
+			this->m_fields->map->placeNode(mirror, ccp(m_fields->size.width - value, this->m_fields->config[m_fields->id]->m_position.y), 0.2);
 		}
 		// y pos
-		else if (event->tag == 514) {
+		else if (tag == 514) {
             auto m = this->m_fields->map;
-			this->m_fields->config[m_fields->id]->m_position.y = event->value;
-			m->placeNode(m_fields->id, ccp(m->getChildByTag(m_fields->id)->getPositionX(), event->value), 0.2);
+			this->m_fields->config[m_fields->id]->m_position.y = value;
+			m->placeNode(m_fields->id, ccp(m->getChildByTag(m_fields->id)->getPositionX(), value), 0.2);
 			// symmetric dual
 			if (!m_fields->id || !Mod::get()->getSavedValue<bool>("symmetry"))
-				return ListenerResult::Stop;
+				return;
 			auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
-			this->m_fields->config[mirror]->m_position = ccp(this->m_fields->config[m_fields->id]->m_position.x, event->value);
-			this->m_fields->map->placeNode(mirror, ccp(this->m_fields->config[m_fields->id]->m_position.x, event->value), 0.2);
+			this->m_fields->config[mirror]->m_position = ccp(this->m_fields->config[m_fields->id]->m_position.x, value);
+			this->m_fields->map->placeNode(mirror, ccp(this->m_fields->config[m_fields->id]->m_position.x, value), 0.2);
 		}
 		// launch slot preview
-		else if (event->tag == 1919) {
-			if (event->value == -1) {
+		else if (tag == 1919) {
+			if (value == -1) {
 				this->TransitionSlots(true, true);
-				return ListenerResult::Stop;
+				return;
 			}
-			else if (!event->value) {
+			else if (!value) {
 				this->showNotify("Empty Slot!", true);
-				return ListenerResult::Stop;
+				return;
 			}
-			//auto slot = event->value ? event->value : this->m_fields->slpage;
-			this->m_fields->slpage = event->value;
-			auto slot = static_cast<SlotFrame*>(this->m_mainLayer->getChildByID("save-slots")->getChildByTag(event->value));
+			//auto slot = value ? value : this->m_fields->slpage;
+			this->m_fields->slpage = value;
+			auto slot = static_cast<SlotFrame*>(this->m_mainLayer->getChildByID("save-slots")->getChildByTag(value));
 			//log::debug("signal 1919 id = {}", m_fields->id);
 			if (this->m_fields->id) {
 				this->m_fields->preview->updateState(1, slot->p1m);	
@@ -406,20 +408,20 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			this->TransitionSlots(false, true);
 		}
 		// load a slot
-		else if (event->tag == 810) {
-			if (event->value) {
+		else if (tag == 810) {
+			if (value) {
 				this->refreshValue();
 				if (this->m_fields->slpage > 0)
 					this->TransitionSlots(true, true);
 				// notify
-				this->showNotify(fmt::format("Config inside Slot {} has been applied as current.", event->value).c_str());				
+				this->showNotify(fmt::format("Config inside Slot {} has been applied as current.", value).c_str());				
 			} else
 				this->showNotify("Empty Slot!", true);
 		}
 		// save to slot
-		else if (event->tag == 94) {
+		else if (tag == 94) {
 			// currently showing the slot
-			if (event->value > 3) {
+			if (value > 3) {
 				if (this->m_fields->id) {
 					this->m_fields->preview->updateState(1, gm->m_dpad2, 0.2);
 					this->m_fields->preview->updateState(2, gm->m_dpad3, 0.2);
@@ -429,68 +431,67 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 					this->m_fields->preview->updateState(0, gm->m_dpad1, 0.2);				
 			}
 			// FLAertLayer
-			this->showNotify(fmt::format("Current config has been dumped to Slot {}.", (int)event->value % 3).c_str());
+			this->showNotify(fmt::format("Current config has been dumped to Slot {}.", (int)value % 3).c_str());
 		}
 		// opacity and more
-		else if (event->tag < 0) {
-			if (event->tag >= -4 && event->tag <= -1) {
-				this->m_fields->config[m_fields->id]->m_width = event->value;
-				this->valueDidChange(event->tag, event->value);
+		else if (tag < 0) {
+			if (tag >= -4 && tag <= -1) {
+				this->m_fields->config[m_fields->id]->m_width = value;
+				this->valueDidChange(tag, value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
-					this->m_fields->config[mirror]->m_width = event->value;
-					this->valueDidChange(event->tag > -3 ? -3 - event->tag : -7 - event->tag, event->value);			
+					this->m_fields->config[mirror]->m_width = value;
+					this->valueDidChange(tag > -3 ? -3 - tag : -7 - tag, value);			
 				}
 			}
-			if (event->tag >= -8 && event->tag <= -5) {
-				this->m_fields->config[m_fields->id]->m_height = event->value;
-				this->valueDidChange(event->tag, event->value);
+			if (tag >= -8 && tag <= -5) {
+				this->m_fields->config[m_fields->id]->m_height = value;
+				this->valueDidChange(tag, value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
-					this->m_fields->config[mirror]->m_height = event->value;
-					this->valueDidChange(event->tag > -7 ? -11 - event->tag : -15 - event->tag, event->value);
+					this->m_fields->config[mirror]->m_height = value;
+					this->valueDidChange(tag > -7 ? -11 - tag : -15 - tag, value);
 				}
 			}
-			if (event->tag >= -12 && event->tag <= -9) {
-				this->m_fields->config[m_fields->id]->m_scale = event->value;
-				this->m_fields->map->scaleNode(m_fields->id, event->value);
+			if (tag >= -12 && tag <= -9) {
+				this->m_fields->config[m_fields->id]->m_scale = value;
+				this->m_fields->map->scaleNode(m_fields->id, value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
-					this->m_fields->config[mirror]->m_scale = event->value;
-					this->m_fields->map->scaleNode(mirror, event->value);
+					this->m_fields->config[mirror]->m_scale = value;
+					this->m_fields->map->scaleNode(mirror, value);
 				}
 			}
-			if (event->tag >= -16 && event->tag <= -13) {
-				this->m_fields->config[m_fields->id]->m_opacity = 255 * event->value;
-				this->m_fields->map->alphaNode(m_fields->id, 255 * event->value);
+			if (tag >= -16 && tag <= -13) {
+				this->m_fields->config[m_fields->id]->m_opacity = 255 * value;
+				this->m_fields->map->alphaNode(m_fields->id, 255 * value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
-					this->m_fields->config[mirror]->m_opacity = 255 * event->value;
-					this->m_fields->map->alphaNode(mirror, 255 * event->value);
+					this->m_fields->config[mirror]->m_opacity = 255 * value;
+					this->m_fields->map->alphaNode(mirror, 255 * value);
 				}
 			}
-			if (event->tag == -21 || event->tag == -22) {
-				this->m_fields->config[m_fields->id]->m_deadzone = event->value;
-				this->valueDidChange(event->tag, event->value);
+			if (tag == -21 || tag == -22) {
+				this->m_fields->config[m_fields->id]->m_deadzone = value;
+				this->valueDidChange(tag, value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = 3 - m_fields->id;
-					this->m_fields->config[mirror]->m_deadzone = event->value;
-					this->valueDidChange(-43 - event->tag, event->value);
+					this->m_fields->config[mirror]->m_deadzone = value;
+					this->valueDidChange(-43 - tag, value);
 				}
 			}
-			if (event->tag == -19 || event->tag == -20) {
-				this->m_fields->config[m_fields->id]->m_radius = event->value;
-				//this->m_fields->map->radiusNode(m_fields->id, event->value);
-				this->valueDidChange(event->tag, event->value);
+			if (tag == -19 || tag == -20) {
+				this->m_fields->config[m_fields->id]->m_radius = value;
+				//this->m_fields->map->radiusNode(m_fields->id, value);
+				this->valueDidChange(tag, value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = 3 - m_fields->id;
-					this->m_fields->config[mirror]->m_radius = event->value;
-					this->valueDidChange(-39 - event->tag, event->value);
-					//this->m_fields->map->radiusNode(mirror, event->value);
+					this->m_fields->config[mirror]->m_radius = value;
+					this->valueDidChange(-39 - tag, value);
+					//this->m_fields->map->radiusNode(mirror, value);
 				}
 			}
 		}
-		return ListenerResult::Stop;
 	}
 	
 	// transition for main menu

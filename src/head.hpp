@@ -6,29 +6,15 @@ const auto gm = GameManager::sharedState();
 
 // single value signal
 // using unique index system
-class Signal : public Event {
-public:
-    int tag;
-    float value;
-    Signal(int tag, float value) {
-        this->tag = tag;
-        this->value = value;
-    }
+struct Signal : public Event<Signal, bool(int, float)> {
+    using Event :: Event;
 };
 
 // position tuple signal
 // posted when a node is dragged
-class PosSignal : public Event {
-public:
-    int tag;
-    CCPoint pos;
-    PosSignal(int tag, CCPoint pos) {
-        this->tag = tag;
-        this->pos = pos;
-    }
+struct PosSignal : public Event<PosSignal, bool(int, CCPoint)> {
+    using Event :: Event;
 };
-
-// 
 
 // a menu bundle to set position in two inputs
 class PosInputBundle : public CCMenu, public TextInputDelegate {
@@ -79,8 +65,6 @@ protected:
     // slider
     void onSlider(CCObject* sender);
 public:
-    // register devtools
-    static void registerDevTools();
     // set the inner value of inputer and slider
     void setValue(float val);
     // create it
@@ -170,8 +154,6 @@ protected:
     // snap or not
     void ccTouchEnded(CCTouch* touch, CCEvent* event) override;
 public:
-    // register devtools
-    static void registerDevTools();
     // get current modified tag (zero for single mode)
     int getCurrent();
     // switch between single mode and dual mode
@@ -243,8 +225,6 @@ public:
     UIButtonConfig p1m, p2m, p1j, p2j;
     // jumpL
     bool jumpL;
-    // register devtools
-    static void registerDevTools();
     // set dual status
     void setDualStatus(bool dual);
     // preview this config

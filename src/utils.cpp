@@ -1,7 +1,6 @@
 #include "head.hpp"
-#include <geode.devtools/include/API.hpp>
 #include <regex>
-#include <Geode/loader/Dispatch.hpp>
+//#include <Geode/loader/Dispatch.hpp>
 
 bool PosInputBundle::init() {
     if (!CCMenu::init())
@@ -37,17 +36,18 @@ bool PosInputBundle::init() {
     //if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
 
+    /*
     listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
         this->m_labelX->setColor(color);
         this->m_labelY->setColor(color);
-    });
+    });*/
 
     return true;
 }
 
 void PosInputBundle::textChanged(CCTextInputNode* input) {
     std::string str = input->getString();
-    Signal(input->getTag(), numFromString<float>(str).unwrapOrDefault()).post();
+    Signal().send(input->getTag(), numFromString<float>(str).unwrapOrDefault());
 }
 
 
@@ -88,10 +88,10 @@ bool InputSliderBundle::init(const char* title, float min, float max, int accu) 
 
     //if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
-
+    /*
     listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
         this->m_label->setColor(color);
-    });
+    });*/
 
     return true;
 }
@@ -101,7 +101,7 @@ void InputSliderBundle::textChanged(CCTextInputNode* input) {
     float val = numFromString<float>(str).unwrapOrDefault();
     val = (val > this->max) && this->force ? this->max : (val < this->min ? this->min : val);
     this->m_slider->setValue((val - this->min) / (this->max - this->min));
-    Signal(this->getTag(), val).post();
+    Signal().send(this->getTag(), val);
 }
 
 void InputSliderBundle::onSlider(CCObject* sender) {
@@ -112,17 +112,7 @@ void InputSliderBundle::onSlider(CCObject* sender) {
     else
         str = numToString<int>(val);
     this->m_input->setString(str.c_str());
-    Signal(this->getTag(), val).post();
-}
-
-void InputSliderBundle::registerDevTools() {
-    devtools::registerNode<InputSliderBundle>([](InputSliderBundle* node) {
-        devtools::label("InputSliderBundle");
-        devtools::property("min", node->min);        
-        devtools::property("max", node->max);
-        devtools::property("precision", node->accu);
-        devtools::property("force ranged", node->force);
-    });
+    Signal().send(this->getTag(), val);
 }
 
 void InputSliderBundle::setValue(float val) {
@@ -203,6 +193,7 @@ bool PreviewFrame::init() {
     if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
 
+    /*
     listenForSettingChangesV3("hori-distance", [this] (int) {
         this->vert.clear();
         this->vert.push_back(static_cast<CCLayerColor*>(this->m_grid->getChildByTag(1919)));
@@ -214,11 +205,11 @@ bool PreviewFrame::init() {
             else
                 i ++;
         }
-        /*
+        
         for (auto child : CCArrayExt<CCNode*>(m_grid->getChildren()))
             if (child->getTag() == 114)
                 child->removeFromParentAndCleanup(true);
-        */
+        
         this->reGridX(true);
     });
 
@@ -233,11 +224,11 @@ bool PreviewFrame::init() {
             else
                 j ++;
         }
-        /*
+        
         for (auto child : CCArrayExt<CCNode*>(m_grid->getChildren()))
             if (child->getTag() == 514)
                 child->removeFromParentAndCleanup(true);
-        */
+        
         this->reGridY(true);
     });
 
@@ -247,7 +238,7 @@ bool PreviewFrame::init() {
         for (auto child : CCArrayExt<CCLayerColor*>(m_grid->getChildren()))
             child->setColor(color);
     });
-
+    */
     return true;
 }
 
@@ -358,7 +349,7 @@ bool PracticePreviewFrame::ccTouchBegan(CCTouch* touch, CCEvent* event) {
     auto p = this->m_target->getPosition();
     CCRect rect = {p.x - 70.f, p.y - 28.f, 140.f, 56.f};
     bool ret = rect.containsPoint(this->convertTouchToNodeSpace(touch));
-    Signal(-100, ret).post();
+    Signal().send(-100, ret);
     return ret;
 }
 
@@ -369,7 +360,7 @@ void PracticePreviewFrame::ccTouchMoved(CCTouch* touch, CCEvent* event) {
     auto dest = this->m_target->getPosition() + delta / this->getScale();
     this->m_target->setPosition(dest);
     //this->m_target->setPosition(this->convertTouchToNodeSpace(touch));
-    PosSignal(0, dest).post();
+    PosSignal().send(0, dest);
 }
 
 void PracticePreviewFrame::ccTouchEnded(CCTouch* touch, CCEvent* event) {
@@ -383,7 +374,7 @@ void PracticePreviewFrame::ccTouchEnded(CCTouch* touch, CCEvent* event) {
 
     auto dest = ccp(c.width + hd * round((t.x - c.width) / hd), c.height + vd * round((t.y - c.height) / vd));
     this->m_target->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, dest)));
-    PosSignal(0, dest).post();
+    PosSignal().send(0, dest);
 }
 
 void PracticePreviewFrame::helpTransition(bool in) {
@@ -439,7 +430,7 @@ bool PlatformPreviewFrame::ccTouchBegan(CCTouch* touch, CCEvent* event) {
     if (this->preview) {
         auto s = this->getContentSize() / 2;
         if (t.x < s.width - 110 || t.x > s.width + 110 || t.y > s.height - 232)
-            Signal(-100, -514).post();
+            Signal().send(-100, -514);
         return false;
     }
 
@@ -451,14 +442,14 @@ bool PlatformPreviewFrame::ccTouchBegan(CCTouch* touch, CCEvent* event) {
         r.origin = p1mNode->getPosition() - r.size / 2;
         bool ret = r.containsPoint(t);
         
-        Signal(-100, ret ? 0 : -114).post();
+        Signal().send(-100, ret ? 0 : -114);
         return ret;
     }
     // dual mode
     auto r = this->getTargetNode(current)->m_rect;
     r.origin = this->getTargetNode(current)->getPosition() - r.size / 2;
     if (r.containsPoint(t)) {
-        Signal(-100, current).post();
+        Signal().send(-100, current);
         return true;
     } else for (auto tag = 1; tag < 5; tag ++) {
         if (tag == this->current)
@@ -468,12 +459,12 @@ bool PlatformPreviewFrame::ccTouchBegan(CCTouch* touch, CCEvent* event) {
         r.origin = this->getTargetNode(tag)->getPosition() - r.size / 2;
         if (r.containsPoint(t)) {
             this->current = tag;
-            Signal(-100, tag).post();
+            Signal().send(-100, tag);
             return true;
         }
     }
     if (this->boundingBox().containsPoint(t))
-        Signal(-100, -114).post();
+        Signal().send(-100, -114);
     return false;
 }
 
@@ -481,7 +472,7 @@ void PlatformPreviewFrame::ccTouchMoved(CCTouch* touch, CCEvent* event) {
     auto delta = touch->getDelta();
     auto dest = this->getChildByTag(current)->getPosition() + delta / this->getScale();
     this->getChildByTag(current)->setPosition(dest);
-    PosSignal(false, dest).post();
+    PosSignal().send(false, dest);
 }
 
 void PlatformPreviewFrame::ccTouchEnded(CCTouch* touch, CCEvent* event) {
@@ -489,7 +480,7 @@ void PlatformPreviewFrame::ccTouchEnded(CCTouch* touch, CCEvent* event) {
     auto dest = this->getChildByTag(current)->getPosition() + delta / this->getScale();
     if (!Mod::get()->getSavedValue<bool>("snap")) {
         this->getChildByTag(current)->setPosition(dest);
-        PosSignal(true, dest).post();
+        PosSignal().send(true, dest);
         return;
     }
     auto c = this->getContentSize() / 2;
@@ -499,16 +490,7 @@ void PlatformPreviewFrame::ccTouchEnded(CCTouch* touch, CCEvent* event) {
     
     dest = ccp(c.width + hd * round((dest.x - c.width) / hd), c.height + vd * round((dest.y - c.height) / vd));
     this->getChildByTag(current)->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, dest)));
-    PosSignal(true, dest).post();
-}
-
-void PlatformPreviewFrame::registerDevTools() {
-    devtools::registerNode<PlatformPreviewFrame>([](PlatformPreviewFrame* node) {
-        devtools::label("PlatformPreviewFrame");
-        devtools::property("index", node->current);        
-        devtools::property("preview", node->preview);
-        devtools::property("activate", node->activate);
-    });
+    PosSignal().send(true, dest);
 }
 
 int PlatformPreviewFrame::getCurrent() {
@@ -691,6 +673,7 @@ bool SlotFrame::init(int nametag) {
     if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
 
+    /*
 	listenForSettingChangesV3("slot-color", [this] (ccColor4B val) {
         this->bg->setColor(to3B(val)); this->bg->setOpacity(val.a); });
 
@@ -700,7 +683,7 @@ bool SlotFrame::init(int nametag) {
         this->saveBtn->setColor(color);
         this->loadBtn->setColor(color);
     });
-
+    */
     return true;
 }
 
@@ -790,15 +773,6 @@ void SlotFrame::refreshDescLabel() {
     this->addChild(this->descLabel);
 }
 
-void SlotFrame::registerDevTools() {
-    devtools::registerNode<SlotFrame>([](SlotFrame* node) {
-        devtools::label("SlotFrame");
-        devtools::property("dual", node->dual);        
-        devtools::property("real", node->real);
-        devtools::property("showing", node->showing);
-    });
-}
-
 void SlotFrame::setDualStatus(bool dual) {
     this->dual = dual;
 
@@ -841,12 +815,12 @@ void SlotFrame::setDualStatus(bool dual) {
 
 void SlotFrame::onPreview(CCObject*) {
     if (this->showing) {
-        Signal(1919, -1).post();
+        Signal().send(1919, -1);
         return;
     }
 
     // post signal firstly
-    Signal(1919, this->real * this->getTag()).post();
+    Signal().send(1919, this->real * this->getTag());
     if (!this->real)
         return;
     
@@ -888,7 +862,7 @@ void SlotFrame::resume() {
         return;
     this->showing = false;
 
-    Signal(-100, 0).post();
+    Signal().send(-100, 0);
     // title label
     this->titleLabel->stopAllActions();
     this->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(10.f, 55.f))));
@@ -938,7 +912,7 @@ void SlotFrame::onSave(CCObject*) {
 
     log::debug("written this->raw #{} {} = {}", getTag(), this->dual, gm->m_dpadLayoutDual1);
     this->refreshDescLabel();
-    Signal(94, this->getTag() + this->showing * 3).post();
+    Signal().send(94, this->getTag() + this->showing * 3);
 }
 
 void SlotFrame::onApply(CCObject*) {
@@ -952,7 +926,7 @@ void SlotFrame::onApply(CCObject*) {
         gm->setGameVariable("0113", this->jumpL);
     }
     // tell main page to refresh
-    Signal(810, this->real * this->getTag()).post();
+    Signal().send(810, this->real * this->getTag());
 }
 
 $execute {
@@ -960,18 +934,10 @@ $execute {
     if (!Mod::get()->setSavedValue("ported", true) && Mod::get()->getSavedSettingsData().contains("bgopacity"))
         Mod::get()->setSettingValue<int64_t>("bg-opacity", Mod::get()->getSavedSettingsData()["bgopacity"].asInt().unwrapOr(217) * 100 / 255);
 
+    /*
     new EventListener(+[](CCPoint pos) {
         //this->m_fields->pcpposMenu->setValue(pos);
         PosSignal(1, pos).post();
         return ListenerResult::Stop;
-    }, DispatchFilter<CCPoint>(Mod::get()->getID()));
-}
-
-$on_mod(Loaded) {
-    // makes sure DevTools is loaded before registering
-    devtools::waitForDevTools([] {
-        InputSliderBundle::registerDevTools();
-        PlatformPreviewFrame::registerDevTools();
-        SlotFrame::registerDevTools();
-    });    
+    }, DispatchFilter<CCPoint>(Mod::get()->getID()));*/
 }

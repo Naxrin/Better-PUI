@@ -1,6 +1,9 @@
 Through further debug test, setting listeners are proved to crash cross platforms, not only Windows. So please **ALWAYS** keep the Crash Protect option ON for now.  
 Will look into a fix.
 
+# 4.3.3-alpha.1
+- Bump to geode 5.0.0-alpha.2 @ GD2.2081
+
 # 3.3.3
 - Fix opacity save issue
 - Fix save slot P2J text issue
