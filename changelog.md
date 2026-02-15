@@ -1,7 +1,9 @@
 # 4.3.3
 - Bump to geode 5.0.0-beta.1 and future stable versions
+- Remove Crash protect option, setting change listener is now safe
+- Various bugfixes
 
-# 4.3.3-alpha.1
+# 4.3.3-beta.1
 - Bump to geode 5.0.0-alpha.2 @ GD2.2081
 
 # 3.3.3

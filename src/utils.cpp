@@ -1,6 +1,5 @@
 #include "head.hpp"
 #include <regex>
-//#include <Geode/loader/Dispatch.hpp>
 
 bool PosInputBundle::init() {
     if (!CCMenu::init())
@@ -33,14 +32,15 @@ bool PosInputBundle::init() {
     m_inputY->setDelegate(this);
     this->addChild(m_inputY);
     
-    //if (Mod::get()->getSettingValue<bool>("dont-crash"))
+    if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
 
-    /*
-    listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
+    this->m_radio = SettingChangedEventV3(Mod::get(), "ui-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
+        auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
         this->m_labelX->setColor(color);
         this->m_labelY->setColor(color);
-    });*/
+        return ListenerResult::Propagate;
+    });
 
     return true;
 }
@@ -86,12 +86,14 @@ bool InputSliderBundle::init(const char* title, float min, float max, int accu) 
     m_slider->setScale(0.6f);
     this->addChild(m_slider);
 
-    //if (Mod::get()->getSettingValue<bool>("dont-crash"))
+    if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
-    /*
-    listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
+
+    this->m_radio = SettingChangedEventV3(Mod::get(), "ui-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
+        auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
         this->m_label->setColor(color);
-    });*/
+        return ListenerResult::Propagate;
+    });
 
     return true;
 }
@@ -193,8 +195,7 @@ bool PreviewFrame::init() {
     if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
 
-    /*
-    listenForSettingChangesV3("hori-distance", [this] (int) {
+    this->m_radioHori = SettingChangedEventV3(Mod::get(), "hori-distance").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
         this->vert.clear();
         this->vert.push_back(static_cast<CCLayerColor*>(this->m_grid->getChildByTag(1919)));
         int i = 0;
@@ -211,9 +212,10 @@ bool PreviewFrame::init() {
                 child->removeFromParentAndCleanup(true);
         
         this->reGridX(true);
+        return ListenerResult::Propagate;
     });
 
-    listenForSettingChangesV3("vert-distance", [this] (int) {
+    this->m_radioHori = SettingChangedEventV3(Mod::get(), "hori-distance").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
         this->hori.clear();
         this->hori.push_back(static_cast<CCLayerColor*>(this->m_grid->getChildByTag(810)));
         int j = 0;
@@ -230,15 +232,18 @@ bool PreviewFrame::init() {
                 child->removeFromParentAndCleanup(true);
         
         this->reGridY(true);
+        return ListenerResult::Propagate;
     });
-
-    listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
+    
+    this->m_radio = SettingChangedEventV3(Mod::get(), "ui-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
+        auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
         for (auto child : CCArrayExt<CCLayerColor*>(m_border->getChildren()))
             child->setColor(color);
         for (auto child : CCArrayExt<CCLayerColor*>(m_grid->getChildren()))
             child->setColor(color);
+        return ListenerResult::Propagate;
     });
-    */
+
     return true;
 }
 
@@ -673,17 +678,22 @@ bool SlotFrame::init(int nametag) {
     if (Mod::get()->getSettingValue<bool>("dont-crash"))
         return true;
 
-    /*
-	listenForSettingChangesV3("slot-color", [this] (ccColor4B val) {
-        this->bg->setColor(to3B(val)); this->bg->setOpacity(val.a); });
 
-    listenForSettingChangesV3("ui-color", [this] (ccColor3B color) {
+    this->m_radio = SettingChangedEventV3(Mod::get(), "ui-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
+        auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
         this->descLabel->setColor(color);
         this->prevBtn->setColor(color);
         this->saveBtn->setColor(color);
         this->loadBtn->setColor(color);
+        return ListenerResult::Propagate;
     });
-    */
+
+    this->m_radioSlot = SettingChangedEventV3(Mod::get(), "slot-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
+        auto color = Mod::get()->getSettingValue<ccColor4B>("slot-color");
+        this->bg->setColor(to3B(color)); this->bg->setOpacity(color.a);
+        return ListenerResult::Propagate;
+    });
+
     return true;
 }
 
@@ -769,6 +779,7 @@ void SlotFrame::refreshDescLabel() {
     this->descLabel->setPosition(pos);
     this->descLabel->setAnchorPoint(ccp(0.f, 1));
     this->descLabel->setScale(scale);
+    this->descLabel->setColor(Mod::get()->getSettingValue<ccColor3B>("ui-color"));
     this->descLabel->setID("desc");
     this->addChild(this->descLabel);
 }
@@ -933,11 +944,4 @@ $execute {
     // not ported yet, and ever loaded
     if (!Mod::get()->setSavedValue("ported", true) && Mod::get()->getSavedSettingsData().contains("bgopacity"))
         Mod::get()->setSettingValue<int64_t>("bg-opacity", Mod::get()->getSavedSettingsData()["bgopacity"].asInt().unwrapOr(217) * 100 / 255);
-
-    /*
-    new EventListener(+[](CCPoint pos) {
-        //this->m_fields->pcpposMenu->setValue(pos);
-        PosSignal(1, pos).post();
-        return ListenerResult::Stop;
-    }, DispatchFilter<CCPoint>(Mod::get()->getID()));*/
 }

@@ -1,5 +1,6 @@
 #include "head.hpp"
 #include <Geode/ui/GeodeUI.hpp>
+#include <Geode/loader/Dispatch.hpp>
 
 // practice
 #include <Geode/modify/UIPOptionsLayer.hpp>
@@ -11,7 +12,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		GameOptionsLayer* opl;
 
 		// title
-          CCLabelBMFont* titleLabel;
+        CCLabelBMFont* titleLabel;
 		// input menu
 		PosInputBundle* posMenu, *pcpposMenu;
 		// several slider menus
@@ -24,7 +25,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		PracticePreviewFrame* map;
 
 		// radios
-		ListenerHandle radioReal, radioPos;
+		ListenerHandle radioReal, radioPos, radioBGC, radioBGO, radioUIC, radioDispatch;
 		
 		// in preview mode
 		bool in_prev;
@@ -34,7 +35,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		bool pcp;
 
 		// setting listeners
-		//EventListener<SettingChangedFilterV3>* radioBGC, * radioBGO, * radioUIC;
+		//EventListener<SettingChangedFilterV3>;
 	};
 
 	bool init() override {
@@ -175,21 +176,36 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		if (Mod::get()->getSettingValue<bool>("dont-crash"))
 			return true;
 
-		/*
-		m_fields->radioBGC = listenForSettingChangesV3("bg-color", [this] (ccColor3B val) { this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b)); });
-		m_fields->radioBGO = listenForSettingChangesV3("bg-opacity", [this] (int val) { this->runAction(CCFadeTo::create(0.2, val * 255 / 100.f)); });
-		m_fields->radioUIC = listenForSettingChangesV3("ui-color", [this] (ccColor3B val) {
+		m_fields->radioBGC = SettingChangedEventV3(Mod::get(), "bg-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
+			auto val = Mod::get()->getSettingValue<ccColor3B>("bg-color");
+			this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b));
+			return ListenerResult::Stop;
+		});
+		m_fields->radioBGO = SettingChangedEventV3(Mod::get(), "bg-opacity").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
+			auto val = Mod::get()->getSettingValue<double>("bg-opacity");
+			this->runAction(CCFadeTo::create(0.2, val * 255 / 100.f));
+			return ListenerResult::Stop;
+		});
+
+		m_fields->radioUIC = SettingChangedEventV3(Mod::get(), "ui-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
+			auto val = Mod::get()->getSettingValue<ccColor3B>("ui-color");
 			for (auto child : CCArrayExt<CCMenuItemSpriteExtra*>(this->m_buttonMenu->getChildren()))
 				if (child->getTag() != 10)
 					child->setColor(val);
-
 			if (m_fields->pcpmod)
 				if (auto node = typeinfo_cast<CCLabelBMFont*>(this->m_mainLayer->getChildByID("pcp-menu")
 					->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_menu")
 					->getChildByID("kevadroz.practicecheckpointpermanence/switcher_scale_label")))
 					node->setColor(val);
+			return ListenerResult::Propagate;
 		});
-		*/
+
+		m_fields->radioDispatch = DispatchEvent<CCPoint>("kevadroz.practicecheckpointpermanence").listen([] (CCPoint pos) -> ListenerResult {
+			//this->m_fields->pcpposMenu->setValue(pos);
+			PosSignal().send(1, pos);
+			return ListenerResult::Stop;
+		});
+
 		return true;
 	}
 
@@ -359,11 +375,6 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 			m_fields->opl->setVisible(true);
 		}
 		else {
-			/*
-			CC_SAFE_DELETE(m_fields->radioBGC);
-			CC_SAFE_DELETE(m_fields->radioBGO);
-			CC_SAFE_DELETE(m_fields->radioUIC);
-			*/
 			this->runAction(CCSequence::create(
 				CallFuncExt::create([this] () { this->Transition(false, true); m_fields->map->helpTransition(false); }),
 				CCDelayTime::create(0.3),
@@ -371,7 +382,6 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 				nullptr
 			));			
 		}
-
 	}
 
 	void keyBackClicked() override {
@@ -381,11 +391,6 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 			m_fields->opl->setVisible(true);
 		}
 		else {
-			/*
-			CC_SAFE_DELETE(m_fields->radioBGC);
-			CC_SAFE_DELETE(m_fields->radioBGO);
-			CC_SAFE_DELETE(m_fields->radioUIC);
-			*/
 			this->runAction(CCSequence::create(
 				CallFuncExt::create([this] () { this->Transition(false, true); m_fields->map->helpTransition(false); }),
 				CCDelayTime::create(0.3),

@@ -23,6 +23,8 @@ protected:
     CCLabelBMFont* m_labelX, * m_labelY;
     // the inputers
     TextInput* m_inputX, * m_inputY;
+    // setting listener
+    ListenerHandle m_radio;
     // init
     bool init() override;
     // text input callback
@@ -55,9 +57,12 @@ protected:
     int accu;
     // if the value should never overflow
     bool force;
+
     CCLabelBMFont* m_label;
     TextInput* m_input;
     Slider* m_slider;
+    //setting listener
+    ListenerHandle m_radio;
     // init
     bool init(const char* title, float min, float max, int accu);
     // inputer
@@ -89,6 +94,8 @@ protected:
     CCSprite* m_border, * m_grid;
     // vector to fade
     std::vector<CCLayerColor*> hori, vert;
+    // setting listener
+    ListenerHandle m_radio, m_radioHori, m_radiooVert;
     // init
     virtual bool init() override;
 public:
@@ -209,6 +216,8 @@ protected:
     CCMenuItemSpriteExtra* prevBtn;
     CCMenuItemSpriteExtra* saveBtn;
     CCMenuItemSpriteExtra* loadBtn;
+    // setting listener
+    ListenerHandle m_radio, m_radioSlot;
     // init
     bool init(int nametag);
     // parse 

@@ -42,7 +42,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		// slots
 		SlotFrame* slots[3];
 		// radios
-		ListenerHandle radioReal, radioPos;
+		ListenerHandle radioReal, radioPos, radioBGC, radioBGO, radioUIC;
 	};
 
 	bool init(bool p) {
@@ -290,15 +290,26 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		if (Mod::get()->getSettingValue<bool>("dont-crash"))
 			return true;
 
-		/*
-		listenForSettingChangesV3("bg-color", [this] (ccColor3B val) { this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b)); });
-		listenForSettingChangesV3("bg-opacity", [this] (int val) { this->runAction(CCFadeTo::create(0.2, val * 255 / 100.f)); });
-		listenForSettingChangesV3("ui-color", [this] (ccColor3B val) {
+		m_fields->radioBGC = SettingChangedEventV3(Mod::get(), "bg-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
+			auto val = Mod::get()->getSettingValue<ccColor3B>("bg-color");
+			this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b));
+			return ListenerResult::Stop;
+		});
+		m_fields->radioBGO = SettingChangedEventV3(Mod::get(), "bg-opacity").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
+			auto val = Mod::get()->getSettingValue<double>("bg-opacity");
+			this->runAction(CCFadeTo::create(0.2, val * 255 / 100.f));
+			return ListenerResult::Stop;
+		});
+
+		m_fields->radioUIC = SettingChangedEventV3(Mod::get(), "ui-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
+			auto val = Mod::get()->getSettingValue<ccColor3B>("ui-color");
 			for (auto child : CCArrayExt<CCMenuItemSpriteExtra*>(this->m_buttonMenu->getChildren()))
 				if (child->getTag() != 10)
 					child->setColor(val);
+			return ListenerResult::Propagate;
+;
 		});
-		*/
+
 		return true;
 	}
 
