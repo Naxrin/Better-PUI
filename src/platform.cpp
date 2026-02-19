@@ -307,7 +307,6 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 				if (child->getTag() != 10)
 					child->setColor(val);
 			return ListenerResult::Propagate;
-;
 		});
 
 		return true;
