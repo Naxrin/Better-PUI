@@ -1,3 +1,7 @@
+# 4.3.4
+- PCP support back
+- better mod desc
+
 # 4.3.3
 - Bump to geode 5.0.0-beta.1 and future stable versions
 - Remove Crash protect option, setting change listener is now safe

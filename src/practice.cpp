@@ -4,6 +4,7 @@
 
 // practice
 #include <Geode/modify/UIPOptionsLayer.hpp>
+
 class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	struct Fields {
 		const CCSize size = CCDirector::sharedDirector()->getWinSize();
@@ -33,9 +34,6 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		// pcp mode
 		Mod* pcpmod = Loader::get()->getLoadedMod("kevadroz.practicecheckpointpermanence");
 		bool pcp;
-
-		// setting listeners
-		//EventListener<SettingChangedFilterV3>;
 	};
 
 	bool init() override {
@@ -50,6 +48,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 
 		this->m_fields->radioPos = PosSignal().listen(
 			[this] (int tag, CCPoint pos) -> ListenerResult {
+				// switch 
 				if (m_fields->pcp != bool(tag)) {
 					m_fields->pcp = tag;
 					if (!m_fields->in_prev)
@@ -200,8 +199,9 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 			return ListenerResult::Propagate;
 		});
 
-		m_fields->radioDispatch = DispatchEvent<CCPoint>("kevadroz.practicecheckpointpermanence").listen([] (CCPoint pos) -> ListenerResult {
-			//this->m_fields->pcpposMenu->setValue(pos);
+		m_fields->radioDispatch = DispatchEvent<CCPoint>(Mod::get()->getID()).listen([this] (CCPoint pos) -> ListenerResult {
+			//log::debug("called dispatch");
+			this->m_fields->pcpposMenu->setValue(pos);
 			PosSignal().send(1, pos);
 			return ListenerResult::Stop;
 		});
@@ -336,6 +336,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		}
 	}
 
+	// switch status between original and pcpmod
+	// @param move if yes, the menus below will both move to a destination
 	void setMenu(bool move) {
 		bool ori = !m_fields->in_prev && !m_fields->pcp;
 		bool pcp = !m_fields->in_prev && m_fields->pcp;
