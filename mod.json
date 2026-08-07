@@ -1,5 +1,5 @@
 {
-	"geode": "5.5.2",
+	"geode": "5.8.2",
 	"gd": {
 		"win": "2.2081",
 		"android": "2.2081",
@@ -8,10 +8,13 @@
 	},
 	"id": "naxrin.better_pui",
 	"name": "Better Platform & Practice Config UI",
-	"version": "v4.3.4",
+	"version": "v4.3.5",
 	"developer": "Naxrin",
 	"description": "Better Platform/Practice Buttons config UI",
 	"tags": ["interface", "offline"],
+	"links": {
+		"source": "https://github.com/Naxrin/Better-PUI"
+	},
 	"resources": {
 		"sprites": [
 			"resources/*"
@@ -91,6 +94,17 @@
 				"arrow-step": 5,
 				"input": true
 			}
+		},
+		"more-title": {
+			"name": "More Options",
+			"description": "else...",
+			"type": "title"
+		},
+		"preview-drag": {
+			"name": "Allow Preview Drag",
+			"description": "Allow you to directly drag nodes in preview mode.\nForces to quit preview if unchecked",
+			"type": "bool",
+			"default":true
 		}
 	}
 }

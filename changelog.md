@@ -1,3 +1,9 @@
+# 4.3.5
+- Add an exit button in save slot browser page
+- Add an option to our preview status that allows to drag buttons or forces quiting preview.
+- Better mod desc, and add github repo link;
+- Version bump
+
 # 4.3.4
 - PCP support back
 - better mod desc

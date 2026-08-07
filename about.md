@@ -1,13 +1,14 @@
 # <cy>Better Platformer & Practice Config UI</c>
-Geometry Dash is a good game but our Platformer & Practice buttons config UI should be better, it's terribly hard to get their logic of settings and it actually have tons of weird designs and bugs like:
+Geometry Dash is a cool game but our Platformer & Practice buttons config UI should be better, it's terribly hard to get their logic of settings and they actually have tons of weird designs and bugs like:
 - No position inputer for buttons;
-- In Platformer buttons UI, snap and split options look like nonsense;
 - In Platformer buttons UI, if you have save or load a dpad layout slot, the six buttons will turn not available until you close the UI menu and launch it again, also we cannot read the data from the three save slots obviously, let alone getting a brief preview;
 - In Practice buttons UI, the opacity inputer and slider does not return to 1.00 on reset button clicked.
 - If we transport our savefile (or save load?) between devices of different screen ratio, our carefully designed UI will definitely break or even go outside of the screen so we cannot drag it unless clicking reset.
-  
-I'm not sure it's worthy or not (for it has been 20 months since 2.2 and most of us should seldom access the two menus?)  
+- In Platformer buttons UI, snap and split options look like nonsense;
+
+So this mod aims to fix all of them above ~~except the last cuz idk wtf does snap and split option mean either~~. I'm not sure it's worthy or not (for it has been 20 months since 2.2 and most of us should seldom access the two menus?)  
 But anyway it's already here.  
+
 
 ### <cy>Note that:</c>
 I can't get where RobTop's snap and split option toggler (in the Platform buttons config UI) actually take effects smh, but in case it really does something, they are preserved as a text label button and linked with RobTop's original toggler callback for each.  
