@@ -361,8 +361,6 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			}
 			// escape fullscreen preview
 			else {
-				//log::debug("escape fullscreen preview {} {}", value, this->m_fields->slpage);
-
 				if (value == -114 && !this->m_fields->slpage && this->m_fields->inprev)
 					this->Transition(true, false);
 				else if (value == -514 && this->m_fields->slpage && this->m_fields->inprev)
