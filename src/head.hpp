@@ -1,4 +1,5 @@
 #include <Geode/Geode.hpp>
+#include <Geode/binding/GameManager.hpp>
 
 using namespace geode::prelude;
 

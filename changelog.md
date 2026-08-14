@@ -1,3 +1,6 @@
+### Note
+- For PCP mod, I honestly cannot add the allow-drag in preview feature in my own mod, it appears like dragging PCP node in preview mode will remain fixed to be allowed. I will pull request there later.
+
 # 4.3.5
 - Add an exit button in save slot browser page
 - Add an option to our preview status that allows to drag buttons or forces quiting preview.

@@ -1,5 +1,4 @@
 #include "head.hpp"
-#include <Geode/ui/GeodeUI.hpp>
 
 // platform
 #include <Geode/modify/UIOptionsLayer.hpp>
@@ -31,7 +30,8 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		PlatformPreviewFrame* map, * preview;
 
 		// some sprites
-		CCMenuItemSpriteExtra* dualBtn, * snapBtn;
+		CCMenuItemSpriteExtra* dualBtn, * snapBtn, * applyBtn;
+        CCMenu* slotAplMenu;
 
 		// labels
 		CCLabelBMFont* modeLabel, * snapLabel, * splitLabel, * jumplLabel, * symmetryLabel;
@@ -229,6 +229,20 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		this->m_fields->slots[2] = SlotFrame::create(3);
 		this->m_fields->slots[2]->setPosition(ccp(0.f, -80.f));
 		slotNode->addChild(this->m_fields->slots[2]);
+
+        // m_fields->titleLabel->setPosition(ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 80.f));
+        
+
+        auto slotAplSpr = CCSprite::create("applyBtn.png"_spr);
+        slotAplSpr->setScale(0.6f);
+        this->m_fields->applyBtn = CCMenuItemSpriteExtra::create(slotAplSpr, this, menu_selector(PlatformOptionsLayer::onClose));
+        this->m_fields->slotAplMenu = CCMenu::create();
+        this->m_fields->slotAplMenu->setContentSize(ccp(0.f, 0.f));
+        this->m_fields->slotAplMenu->setScale(0.f);
+        this->m_fields->slotAplMenu->setID("slot-apply");
+        this->m_fields->slotAplMenu->addChild(this->m_fields->applyBtn);
+        this->m_fields->slotAplMenu->setPosition(ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 80.f));
+        this->m_mainLayer->addChild(this->m_fields->slotAplMenu);
 
 		// buttons below
         std::map<int, std::pair<const char*, SEL_MenuHandler>> btnIndexes = {
@@ -628,6 +642,8 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			this->m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + !in * 45.f))));
 		}
 
+		this->m_fields->slotAplMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, in)));
+		this->m_fields->slotAplMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 80.f + in * 30.f))));
 	}
 
 	void showNotify(const char* str, bool warning = false) {
