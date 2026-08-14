@@ -354,8 +354,9 @@ bool PracticePreviewFrame::init() {
 bool PracticePreviewFrame::ccTouchBegan(CCTouch* touch, CCEvent* event) {
     auto p = this->m_target->getPosition();
     CCRect rect = {p.x - 70.f, p.y - 28.f, 140.f, 56.f};
-    bool ret = rect.containsPoint(this->convertTouchToNodeSpace(touch)) && Mod::get()->getSettingValue<bool>("preview-drag");
+    bool ret = rect.containsPoint(this->convertTouchToNodeSpace(touch)) && (Mod::get()->getSettingValue<bool>("preview-drag") || this->getScale() < 0.75f);
     Signal().send(-100, ret);
+    log::info("practice ret = {}", ret);
     return ret;
 }
 
@@ -441,7 +442,7 @@ bool PlatformPreviewFrame::ccTouchBegan(CCTouch* touch, CCEvent* event) {
     }
 
     // not preview
-    if (!Mod::get()->getSettingValue<bool>("preview-drag")) {
+    if (!Mod::get()->getSettingValue<bool>("preview-drag") && this->getScale() > 0.75f) {
         Signal().send(-100, -114);
         return false;
     }
