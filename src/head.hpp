@@ -18,7 +18,7 @@ struct PosSignal : public Event<PosSignal, bool(int, CCPoint)> {
 };
 
 // a menu bundle to set position in two inputs
-class PosInputBundle : public CCMenu, public TextInputDelegate {
+class PosInputBundle : public CCMenu {
 protected:
     // labels
     CCLabelBMFont* m_labelX, * m_labelY;
@@ -28,8 +28,6 @@ protected:
     ListenerHandle m_radio;
     // init
     bool init() override;
-    // text input callback
-    void textChanged(CCTextInputNode* input) override;
 public:
     // direct set its value
     void setValue(const CCPoint &pos);
@@ -50,7 +48,7 @@ public:
 };
 
 // a bundle that contains a positive value
-class InputSliderBundle : public CCMenu, public TextInputDelegate {
+class InputSliderBundle : public CCMenu {
 protected:
     // range
     float min, max;
@@ -66,8 +64,6 @@ protected:
     ListenerHandle m_radio;
     // init
     bool init(const char* title, float min, float max, int accu);
-    // inputer
-    void textChanged(CCTextInputNode* input) override;
     // slider
     void onSlider(CCObject* sender);
 public:
@@ -206,7 +202,7 @@ protected:
     // really has data or is empty
     bool real = true;
     // raw string of this config
-    gd::string* raw;
+    std::string* raw;
     // screen size
     const CCSize size = CCDirector::sharedDirector()->getWinSize();
     // bg

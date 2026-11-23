@@ -9,6 +9,9 @@ Geometry Dash is a cool game but our Platformer & Practice buttons config UI sho
 So this mod aims to fix all of them above ~~except the last cuz idk wtf does snap and split option mean either~~. I'm not sure it's worthy or not (for it has been 20 months since 2.2 and most of us should seldom access the two menus?)  
 But anyway it's already here.  
 
+### Geometry Dash 2.209
+2.209 replaces the old platformer buttons UI (`UIOptionsLayer`) on Windows with the new touch controls editor, so the mod now replaces that global touch controls editor with its own precise editor (positions, sizes, scale, opacity, deadzone, radius, grid snapping, save slots, symmetric P2 editing and copy / paste). Level-specific custom controls keep the vanilla editor. The practice UI replacement works as before.
+
 ### Note that:
 I can't get where RobTop's snap and split option toggler (in the Platform buttons config UI) actually take effects smh, but in case it really does something, they are preserved as a text label button and linked with RobTop's original toggler callback for each.  
 **Welcome to share with me if you have an idea on the two options!**  

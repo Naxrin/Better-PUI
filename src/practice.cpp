@@ -37,7 +37,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	};
 
 	bool init() override {
-		if (!SetupTriggerPopup::init(nullptr, nullptr, 420.f, 280.f, 1))
+		if (!SetupTriggerPopup::init(nullptr, nullptr, 420.f, 280.f, 1, 0.f))
 			return false;
 
 		this->m_fields->radioReal = Signal().listen(
@@ -172,9 +172,6 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		this->Transition(true, true);
 		m_fields->map->helpTransition(true);
 
-		if (Mod::get()->getSettingValue<bool>("dont-crash"))
-			return true;
-
 		m_fields->radioBGC = SettingChangedEventV3(Mod::get(), "bg-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
 			auto val = Mod::get()->getSettingValue<ccColor3B>("bg-color");
 			this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b));
@@ -228,13 +225,7 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
 		
 		setMenu(true);
-		/*
-		this->m_fields->posMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
-		this->m_fields->pcpposMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
-		this->m_fields->opacityMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
-		if (auto menu = this->m_mainLayer->getChildByID("switcher-scale"))
-			menu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, in)));
-		*/
+
 		this->m_buttonMenu->stopAllActions();
 		this->m_buttonMenu->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.3, 0.5 * (in + 1))));
 		this->m_buttonMenu->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.3, ccp(m_fields->size.width / 2, m_fields->size.height / 4 - 100.f + in * 45.f))));
@@ -301,7 +292,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 	void onPreview(CCObject*) {
 		m_fields->in_prev = true;
 		this->Transition(false, false);
-		m_fields->opl->setVisible(false);
+		if (m_fields->opl)
+			m_fields->opl->setVisible(false);
 	}
 
     void onSnap(CCObject*) {
@@ -374,7 +366,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		this->m_fields->in_prev = !this->m_fields->in_prev;
 		if (!this->m_fields->in_prev) {
 			this->Transition(true, false);
-			m_fields->opl->setVisible(true);
+			if (m_fields->opl)
+				m_fields->opl->setVisible(true);
 		}
 		else {
 			this->runAction(CCSequence::create(
@@ -390,7 +383,8 @@ class $modify(PracticeOptionsLayer, UIPOptionsLayer) {
 		this->m_fields->in_prev = !this->m_fields->in_prev;
 		if (!this->m_fields->in_prev) {
 			this->Transition(true, false);
-			m_fields->opl->setVisible(true);
+			if (m_fields->opl)
+				m_fields->opl->setVisible(true);
 		}
 		else {
 			this->runAction(CCSequence::create(

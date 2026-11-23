@@ -10,32 +10,31 @@ bool PosInputBundle::init() {
     auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
 
     this->m_labelX = CCLabelBMFont::create("X = ", "chatFont.fnt");
-    m_labelX->setPosition(ccp(-150.f, 0.f));
-    m_labelX->setColor(color);
-    this->addChild(m_labelX);
+    this->m_labelX->setPosition(ccp(-150.f, 0.f));
+    this->m_labelX->setColor(color);
+    this->addChild(this->m_labelX);
 
     this->m_inputX = TextInput::create(60, "X Pos");
-    m_inputX->setFilter("-0123456789.");
-    m_inputX->setPosition(ccp(-90.f, 0.f));
-    m_inputX->getInputNode()->setTag(114);
-    m_inputX->setDelegate(this);
-    this->addChild(m_inputX);
+    this->m_inputX->setFilter("-0123456789.");
+    this->m_inputX->setPosition(ccp(-90.f, 0.f));
+    this->m_inputX->setCallback([] (std::string const& str) {
+        Signal().send(114, numFromString<float>(str).unwrapOrDefault());
+    });
+    this->addChild(this->m_inputX);
 
     this->m_labelY = CCLabelBMFont::create("Y = ", "chatFont.fnt");
-    m_labelY->setPosition(ccp(60.f, 0.f));
-    m_labelY->setColor(color);
-    this->addChild(m_labelY);
+    this->m_labelY->setPosition(ccp(60.f, 0.f));
+    this->m_labelY->setColor(color);
+    this->addChild(this->m_labelY);
 
     this->m_inputY = TextInput::create(60, "Y Pos");
-    m_inputY->setFilter("-0123456789.");
-    m_inputY->setPosition(ccp(120.f, 0.f));
-    m_inputY->getInputNode()->setTag(514);
-    m_inputY->setDelegate(this);
-    this->addChild(m_inputY);
+    this->m_inputY->setFilter("-0123456789.");
+    this->m_inputY->setPosition(ccp(120.f, 0.f));
+    this->m_inputY->setCallback([] (std::string const& str) {
+        Signal().send(514, numFromString<float>(str).unwrapOrDefault());
+    });
+    this->addChild(this->m_inputY);
     
-    if (Mod::get()->getSettingValue<bool>("dont-crash"))
-        return true;
-
     this->m_radio = SettingChangedEventV3(Mod::get(), "ui-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
         auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
         this->m_labelX->setColor(color);
@@ -45,12 +44,6 @@ bool PosInputBundle::init() {
 
     return true;
 }
-
-void PosInputBundle::textChanged(CCTextInputNode* input) {
-    std::string str = input->getString();
-    Signal().send(input->getTag(), numFromString<float>(str).unwrapOrDefault());
-}
-
 
 void PosInputBundle::setValue(const CCPoint &pos) {
     this->m_inputX->setString(numToString<float>(pos.x, 2));
@@ -69,26 +62,28 @@ bool InputSliderBundle::init(const char* title, float min, float max, int accu) 
     this->setContentSize(ccp(0.f, 0.f));
 
     this->m_label = CCLabelBMFont::create(fmt::format("{} = ", title).c_str(), "chatFont.fnt");
-    m_label->setPosition(ccp(-100.f, 0.f));
-    m_label->setColor(Mod::get()->getSettingValue<ccColor3B>("ui-color"));
-    this->addChild(m_label);
+    this->m_label->setPosition(ccp(-100.f, 0.f));
+    this->m_label->setColor(Mod::get()->getSettingValue<ccColor3B>("ui-color"));
+    this->addChild(this->m_label);
 
     this->m_input = TextInput::create(60, "0 ~ 1");
-    m_input->setFilter("0123456789.");
-    m_input->setPosition(ccp(-30.f, 0.f));
-    m_input->setDelegate(this);
-    m_input->setID("inputer");
-    m_input->setScale(0.9);
-    this->addChild(m_input);
+    this->m_input->setFilter("0123456789.");
+    this->m_input->setPosition(ccp(-30.f, 0.f));
+    this->m_input->setID("inputer");
+    this->m_input->setScale(0.9);
+    this->m_input->setCallback([this] (std::string const& str) {
+        float val = numFromString<float>(str).unwrapOrDefault();
+        val = (val > this->max) && this->force ? this->max : (val < this->min ? this->min : val);
+        this->m_slider->setValue((val - this->min) / (this->max - this->min));
+        Signal().send(this->getTag(), val);
+    });
+    this->addChild(this->m_input);
 
     this->m_slider = Slider::create(this, menu_selector(InputSliderBundle::onSlider));
-    m_slider->setPosition(ccp(80.f, 0.f));
-    m_slider->setContentSize(ccp(0.f, 0.f));
-    m_slider->setScale(0.6f);
-    this->addChild(m_slider);
-
-    if (Mod::get()->getSettingValue<bool>("dont-crash"))
-        return true;
+    this->m_slider->setPosition(ccp(80.f, 0.f));
+    this->m_slider->setContentSize(ccp(0.f, 0.f));
+    this->m_slider->setScale(0.6f);
+    this->addChild(this->m_slider);
 
     this->m_radio = SettingChangedEventV3(Mod::get(), "ui-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
         auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
@@ -97,14 +92,6 @@ bool InputSliderBundle::init(const char* title, float min, float max, int accu) 
     });
 
     return true;
-}
-
-void InputSliderBundle::textChanged(CCTextInputNode* input) {
-    std::string str = input->getString();
-    float val = numFromString<float>(str).unwrapOrDefault();
-    val = (val > this->max) && this->force ? this->max : (val < this->min ? this->min : val);
-    this->m_slider->setValue((val - this->min) / (this->max - this->min));
-    Signal().send(this->getTag(), val);
 }
 
 void InputSliderBundle::onSlider(CCObject* sender) {
@@ -136,20 +123,20 @@ bool PreviewFrame::init() {
 
     // border
     this->m_border = CCSprite::create();
-    m_border->setPosition(center);
+    this->m_border->setPosition(center);
     //m_border->setC(center);
-    m_border->setID("border");
+    this->m_border->setID("border");
     //m_border->setOpacity(0);
     //m_border->setCascadeOpacityEnabled(true);
-    this->addChild(m_border);
+    this->addChild(this->m_border);
 
     // grid
     this->m_grid = CCSprite::create();
-    m_grid->setPosition(center);
-    m_grid->setID("grid");
+    this->m_grid->setPosition(center);
+    this->m_grid->setID("grid");
     //m_grid->setOpacity(0);
     //m_grid->setCascadeOpacityEnabled(true);
-    this->addChild(m_grid);
+    this->addChild(this->m_grid);
 
     auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
 
@@ -162,10 +149,10 @@ bool PreviewFrame::init() {
         v->setColor(color);
         //v->setCascadeOpacityEnabled(true);
         if (x)
-            m_border->addChild(v);
+            this->m_border->addChild(v);
         else {
             v->setTag(1919);
-            m_grid->addChild(v);
+            this->m_grid->addChild(v);
             this->vert.push_back(v);            
         }
     }
@@ -179,10 +166,10 @@ bool PreviewFrame::init() {
         h->setColor(color);
         //h->setCascadeOpacityEnabled(true);
         if (y)
-            m_border->addChild(h);
+            this->m_border->addChild(h);
         else {
             h->setTag(810);
-            m_grid->addChild(h);
+            this->m_grid->addChild(h);
             this->hori.push_back(h);
         }
     }
@@ -193,22 +180,19 @@ bool PreviewFrame::init() {
     this->setTouchEnabled(true);
     this->setTouchMode(ccTouchesMode::kCCTouchesOneByOne);
 
-    if (Mod::get()->getSettingValue<bool>("dont-crash"))
-        return true;
-
     this->m_radioHori = SettingChangedEventV3(Mod::get(), "hori-distance").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
         this->vert.clear();
         this->vert.push_back(static_cast<CCLayerColor*>(this->m_grid->getChildByTag(1919)));
         int i = 0;
-        while (i < m_grid->getChildrenCount()) {
-            auto child = m_grid->getChildByIndex(i);
+        while (i < this->m_grid->getChildrenCount()) {
+            auto child = this->m_grid->getChildByIndex(i);
             if (child->getTag() == 114)
                 child->removeFromParentAndCleanup(true);
             else
                 i ++;
         }
         
-        for (auto child : CCArrayExt<CCNode*>(m_grid->getChildren()))
+        for (auto child : CCArrayExt<CCNode*>(this->m_grid->getChildren()))
             if (child->getTag() == 114)
                 child->removeFromParentAndCleanup(true);
         
@@ -220,15 +204,15 @@ bool PreviewFrame::init() {
         this->hori.clear();
         this->hori.push_back(static_cast<CCLayerColor*>(this->m_grid->getChildByTag(810)));
         int j = 0;
-        while (j < m_grid->getChildrenCount()) {
-            auto child = m_grid->getChildByIndex(j);
+        while (j < this->m_grid->getChildrenCount()) {
+            auto child = this->m_grid->getChildByIndex(j);
             if (child->getTag() == 514)
                 child->removeFromParentAndCleanup(true);
             else
                 j ++;
         }
         
-        for (auto child : CCArrayExt<CCNode*>(m_grid->getChildren()))
+        for (auto child : CCArrayExt<CCNode*>(this->m_grid->getChildren()))
             if (child->getTag() == 514)
                 child->removeFromParentAndCleanup(true);
         
@@ -238,9 +222,9 @@ bool PreviewFrame::init() {
     
     this->m_radio = SettingChangedEventV3(Mod::get(), "ui-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
         auto color = Mod::get()->getSettingValue<ccColor3B>("ui-color");
-        for (auto child : CCArrayExt<CCLayerColor*>(m_border->getChildren()))
+        for (auto child : CCArrayExt<CCLayerColor*>(this->m_border->getChildren()))
             child->setColor(color);
-        for (auto child : CCArrayExt<CCLayerColor*>(m_grid->getChildren()))
+        for (auto child : CCArrayExt<CCLayerColor*>(this->m_grid->getChildren()))
             child->setColor(color);
         return ListenerResult::Propagate;
     });
@@ -265,7 +249,7 @@ void PreviewFrame::reGridX(bool visible) {
         l->ignoreAnchorPointForPosition(false);
         l->setColor(color);
         l->setTag(114);
-        m_grid->addChild(l);
+        this->m_grid->addChild(l);
         this->vert.push_back(l);
 
         auto r = CCLayerColor::create(ccc4(255, 255, 255, visible * 255));
@@ -274,7 +258,7 @@ void PreviewFrame::reGridX(bool visible) {
         r->ignoreAnchorPointForPosition(false);
         r->setColor(color);
         r->setTag(114);
-        m_grid->addChild(r);
+        this->m_grid->addChild(r);
         this->vert.push_back(r);
     }
 }
@@ -297,7 +281,7 @@ void PreviewFrame::reGridY(bool visible) {
         t->ignoreAnchorPointForPosition(false);
         t->setColor(color);
         t->setTag(514);
-        m_grid->addChild(t);
+        this->m_grid->addChild(t);
         this->hori.push_back(t);
 
         auto b = CCLayerColor::create(ccc4(255, 255, 255, visible * 255));
@@ -306,13 +290,13 @@ void PreviewFrame::reGridY(bool visible) {
         b->ignoreAnchorPointForPosition(false);
         b->setColor(color);
         b->setTag(514);
-        m_grid->addChild(b);
+        this->m_grid->addChild(b);
         this->hori.push_back(b);
     }    
 }
 
 void PreviewFrame::helpTransition(bool in) {
-    for (auto b : CCArrayExt<CCLayerColor*>(m_border->getChildren()))
+    for (auto b : CCArrayExt<CCLayerColor*>(this->m_border->getChildren()))
         b->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, 255 * in)));
 
     if (Mod::get()->getSavedValue<bool>("snap"))
@@ -333,20 +317,20 @@ bool PracticePreviewFrame::init() {
     // target node
     // the practice button (sprite here)
     this->m_sprL = CCSprite::createWithSpriteFrameName("GJ_checkpointBtn_001.png");
-    m_sprL->setPositionX(-28.25f);
-    m_sprL->setOpacity(gm->m_practiceOpacity);
+    this->m_sprL->setPositionX(-28.25f);
+    this->m_sprL->setOpacity(gm->m_practiceOpacity);
 
     this->m_sprR = CCSprite::createWithSpriteFrameName("GJ_removeCheckBtn_001.png");
-    m_sprR->setPositionX(41.50f);
-    m_sprR->setOpacity(gm->m_practiceOpacity);
+    this->m_sprR->setPositionX(41.50f);
+    this->m_sprR->setOpacity(gm->m_practiceOpacity);
 
     this->m_target = CCSprite::create();
-    m_target->setPosition(gm->m_practicePos);
-    m_target->setContentSize(ccp(0.f, 0.f));
-    m_target->setID("target");
-    m_target->addChild(this->m_sprL);
-    m_target->addChild(this->m_sprR);
-    this->addChild(m_target);
+    this->m_target->setPosition(gm->m_practicePos);
+    this->m_target->setContentSize(ccp(0.f, 0.f));
+    this->m_target->setID("target");
+    this->m_target->addChild(this->m_sprL);
+    this->m_target->addChild(this->m_sprR);
+    this->addChild(this->m_target);
 
     return true;
 }
@@ -394,7 +378,7 @@ void PracticePreviewFrame::placeNode(const CCPoint& pos) {
 }
 
 void PracticePreviewFrame::alphaNode(GLubyte opacity, float d) {
-    for (auto child : CCArrayExt<CCSprite*>(m_target->getChildren()))
+    for (auto child : CCArrayExt<CCSprite*>(this->m_target->getChildren()))
         child->runAction(CCEaseExponentialOut::create(CCFadeTo::create(d, opacity)));
 }
 
@@ -406,24 +390,24 @@ bool PlatformPreviewFrame::init(bool preview) {
     this->preview= preview;
     // target nodes
     this->p1mNode = GJUINode::create(current ? gm->m_dpad2 : gm->m_dpad1);
-    p1mNode->setTag(current);
-    this->alphaNode(p1mNode, 0, 0);
-    this->addChild(p1mNode);
+    this->p1mNode->setTag(current);
+    this->alphaNode(this->p1mNode, 0, 0);
+    this->addChild(this->p1mNode);
 
     this->p2mNode = GJUINode::create(gm->m_dpad3);
-    p2mNode->setTag(2);
-    this->alphaNode(p2mNode, 0, 0);
-    this->addChild(p2mNode);
+    this->p2mNode->setTag(2);
+    this->alphaNode(this->p2mNode, 0, 0);
+    this->addChild(this->p2mNode);
 
     this->p1jNode = GJUINode::create(gm->m_dpad4);
-    p1jNode->setTag(3);
-    this->alphaNode(p1jNode, 0, 0);
-    this->addChild(p1jNode);
+    this->p1jNode->setTag(3);
+    this->alphaNode(this->p1jNode, 0, 0);
+    this->addChild(this->p1jNode);
 
     this->p2jNode = GJUINode::create(gm->m_dpad5);
-    p2jNode->setTag(4);
-    this->alphaNode(p2jNode, 0, 0);
-    this->addChild(p2jNode);
+    this->p2jNode->setTag(4);
+    this->alphaNode(this->p2jNode, 0, 0);
+    this->addChild(this->p2jNode);
 
     return true;
 }
@@ -449,19 +433,19 @@ bool PlatformPreviewFrame::ccTouchBegan(CCTouch* touch, CCEvent* event) {
 
     // single mode
     if (!this->current) {
-        auto r = p1mNode->m_rect;
+        auto r = this->p1mNode->m_rect;
         //log::debug("rect = {} {}", r.origin.x, r.origin.y);
-        r.origin = p1mNode->getPosition() - r.size / 2;
+        r.origin = this->p1mNode->getPosition() - r.size / 2;
         bool ret = r.containsPoint(t);
         
         Signal().send(-100, ret ? 0 : -114);
         return ret;
     }
     // dual mode
-    auto r = this->getTargetNode(current)->m_rect;
-    r.origin = this->getTargetNode(current)->getPosition() - r.size / 2;
+    auto r = this->getTargetNode(this->current)->m_rect;
+    r.origin = this->getTargetNode(this->current)->getPosition() - r.size / 2;
     if (r.containsPoint(t)) {
-        Signal().send(-100, current);
+        Signal().send(-100, this->current);
         return true;
     } else for (auto tag = 1; tag < 5; tag ++) {
         if (tag == this->current)
@@ -555,7 +539,10 @@ void PlatformPreviewFrame::helpTransition(bool in) {
 // update state
 void PlatformPreviewFrame::updateState(int tag, const UIButtonConfig &config, float d) {
     //log::debug("upstate tag = {}", tag);
-    this->updateState(static_cast<GJUINode*>(this->getChildByTag(tag)), config, d);
+    auto node = static_cast<GJUINode*>(this->getChildByTag(tag));
+    if (!node)
+        return;
+    this->updateState(node, config, d);
 }
 
 void PlatformPreviewFrame::updateState(GJUINode* node, const UIButtonConfig &config, float d) {
@@ -681,9 +668,6 @@ bool SlotFrame::init(int nametag) {
     this->loadBtn->setPosition(ccp(340.f, 10.f));
     this->loadBtn->setColor(color);
     this->addChild(this->loadBtn);
-
-    if (Mod::get()->getSettingValue<bool>("dont-crash"))
-        return true;
 
 
     this->m_radio = SettingChangedEventV3(Mod::get(), "ui-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
@@ -813,7 +797,7 @@ void SlotFrame::setDualStatus(bool dual) {
         this->jumpL = false;
 
     // refresh raw string pointer
-    gd::string* s[3] = {
+    std::string* s[3] = {
         this->dual ? &gm->m_dpadLayoutDual1 : &gm->m_dpadLayout1,
         this->dual ? &gm->m_dpadLayoutDual2 : &gm->m_dpadLayout2,
         this->dual ? &gm->m_dpadLayoutDual3 : &gm->m_dpadLayout3

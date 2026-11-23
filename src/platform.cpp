@@ -1,53 +1,164 @@
 #include "head.hpp"
+#include <Geode/modify/TouchControlEditLayer.hpp>
+#include <Geode/binding/PauseLayer.hpp>
+#include <Geode/binding/PlatformerControlsPopup.hpp>
+
+#include <optional>
 
 // platform
-#include <Geode/modify/UIOptionsLayer.hpp>
-class $modify(PlatformOptionsLayer, UIOptionsLayer) {
+//
+// Geometry Dash 2.209 replaced the old Windows platformer buttons UI
+// (UIOptionsLayer) with the new touch controls editor (TouchControlEditLayer),
+// so this mod now replaces *that* editor instead: when the game asks for the
+// global touch configuration editor, we show our own UI. Level-specific custom
+// controls keep the vanilla editor because our UI only knows the global
+// configuration, which is still stored in GameManager's dpad settings.
+class PlatformEditorLayer : public SetupTriggerPopup {
+protected:
 	struct Fields {
 		const CCSize size = CCDirector::sharedDirector()->getWinSize();
 
 		UIButtonConfig* config[5] = {&gm->m_dpad1, &gm->m_dpad2, &gm->m_dpad3, &gm->m_dpad4, &gm->m_dpad5};
-		// ui to hide
-		GameOptionsLayer* opl;
 
 		// pages
 		//std::vector<Pages> pages;
 
 		// on browsing preview
-		int slpage;
+		int slpage = 0;
 		// current id
-		int id;
+		int id = 0;
 		// in preview
-		bool inprev;
+		bool inprev = false;
 
 		// title
-          CCLabelBMFont* titleLabel;
+		CCLabelBMFont* titleLabel = nullptr;
+		// current edited node name
+		CCLabelBMFont* nameLabel = nullptr;
 		// planar menus
-		PosInputBundle* posMenu;
+		PosInputBundle* posMenu = nullptr;
 		// input slider menus
-		InputSliderBundle* widthMenu, * heightMenu, * scaleMenu, * opacityMenu, * deadzoneMenu, * radiusMenu;
+		InputSliderBundle* widthMenu = nullptr, * heightMenu = nullptr, * scaleMenu = nullptr, * opacityMenu = nullptr, * deadzoneMenu = nullptr, * radiusMenu = nullptr;
 		// map
-		PlatformPreviewFrame* map, * preview;
+		PlatformPreviewFrame* map = nullptr, * preview = nullptr;
 
 		// some sprites
-		CCMenuItemSpriteExtra* dualBtn, * snapBtn, * applyBtn;
-        CCMenu* slotAplMenu;
+		CCMenuItemSpriteExtra* dualBtn = nullptr, * snapBtn = nullptr, * applyBtn = nullptr;
+		CCMenu* slotAplMenu = nullptr;
 
 		// labels
-		CCLabelBMFont* modeLabel, * snapLabel, * splitLabel, * jumplLabel, * symmetryLabel;
+		CCLabelBMFont* modeLabel = nullptr, * snapLabel = nullptr, * splitLabel = nullptr, * jumplLabel = nullptr, * symmetryLabel = nullptr;
 
 		// the btns from label sprites
-		CCMenuItemSpriteExtra* modeBtn, * snap0Btn, * splitBtn, * jumplBtn, * symmetryBtn;
+		CCMenuItemSpriteExtra* modeBtn = nullptr, * snap0Btn = nullptr, * splitBtn = nullptr, * jumplBtn = nullptr, * symmetryBtn = nullptr;
 
 		// slots
-		SlotFrame* slots[3];
+		SlotFrame* slots[3] = {nullptr, nullptr, nullptr};
 		// radios
 		ListenerHandle radioReal, radioPos, radioBGC, radioBGO, radioUIC;
+
+		// hidden while the fullscreen preview is open
+		PauseLayer* pauseLayer = nullptr;
+		PlatformerControlsPopup* controlsPopup = nullptr;
+		bool pauseWasVisible = true;
+		bool popupWasVisible = true;
 	};
 
-	bool init(bool p) {
-		if (!SetupTriggerPopup::init(nullptr, nullptr, 420.f, 280.f, 1))
+	std::unique_ptr<Fields> m_fields;
+
+	// find the first node of a type anywhere below root
+	template <class T>
+	static T* findNodeOfType(CCNode* root) {
+		if (!root)
+			return nullptr;
+		for (auto child : CCArrayExt<CCNode*>(root->getChildren())) {
+			if (!child)
+				continue;
+			if (auto found = typeinfo_cast<T*>(child))
+				return found;
+			if (auto found = findNodeOfType<T>(child))
+				return found;
+		}
+		return nullptr;
+	}
+
+	// is `node` inside `ancestor`?
+	static bool isNodeInside(CCNode* node, CCNode* ancestor) {
+		for (auto current = node; current; current = current->getParent())
+			if (current == ancestor)
+				return true;
+		return false;
+	}
+
+	// in fullscreen preview the level is the only thing the player should see:
+	// hide the pause menu and the level controls popup (if they are there) and
+	// make our own background transparent
+	void enterFullscreenPreview() {
+		auto scene = CCScene::get();
+		if (!scene)
+			return;
+
+		if (!m_fields->pauseLayer) {
+			m_fields->pauseLayer = findNodeOfType<PauseLayer>(scene);
+			// never hide a layer that contains this editor, that would hide us too
+			if (m_fields->pauseLayer && !isNodeInside(this, m_fields->pauseLayer)) {
+				m_fields->pauseWasVisible = m_fields->pauseLayer->isVisible();
+				m_fields->pauseLayer->setVisible(false);
+			} else {
+				m_fields->pauseLayer = nullptr;
+			}
+		}
+		if (!m_fields->controlsPopup) {
+			m_fields->controlsPopup = findNodeOfType<PlatformerControlsPopup>(scene);
+			if (m_fields->controlsPopup && !isNodeInside(this, m_fields->controlsPopup)) {
+				m_fields->popupWasVisible = m_fields->controlsPopup->isVisible();
+				m_fields->controlsPopup->setVisible(false);
+			} else {
+				m_fields->controlsPopup = nullptr;
+			}
+		}
+
+		this->stopAllActions();
+		this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(0.4, 0)));
+	}
+
+	// restore everything the preview hid
+	void exitFullscreenPreview() {
+		if (m_fields->pauseLayer) {
+			m_fields->pauseLayer->setVisible(m_fields->pauseWasVisible);
+			m_fields->pauseLayer = nullptr;
+		}
+		if (m_fields->controlsPopup) {
+			m_fields->controlsPopup->setVisible(m_fields->popupWasVisible);
+			m_fields->controlsPopup = nullptr;
+		}
+
+		this->stopAllActions();
+		this->runAction(CCEaseExponentialOut::create(CCFadeTo::create(
+			0.4, Mod::get()->getSettingValue<int64_t>("bg-opacity") * 255 / 100)));
+	}
+
+public:
+
+	// some game entry points already know whether we should start in dual mode
+	std::optional<bool> m_initialDual;
+
+	static PlatformEditorLayer* create(std::optional<bool> dual = std::nullopt) {
+		auto node = new PlatformEditorLayer();
+		node->m_initialDual = dual;
+		if (node && node->init()) {
+			node->autorelease();
+			return node;
+		}
+		CC_SAFE_DELETE(node);
+		return nullptr;
+	}
+
+protected:
+	bool init() {
+		if (!SetupTriggerPopup::init(nullptr, nullptr, 420.f, 280.f, 1, 0.f))
 			return false;
+
+		m_fields = std::make_unique<Fields>();
 		
 		this->m_fields->radioReal = Signal().listen(
             [this](int tag, float value) -> ListenerResult {
@@ -78,14 +189,15 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		log::debug("m_dpadLayoutDual2 = {}", gm->m_dpadLayoutDual2);
 		log::debug("m_dpadLayoutDual3 = {}", gm->m_dpadLayoutDual3);
 		
-		// game options layer below
-		m_fields->opl = CCScene::get()->getChildByType<GameOptionsLayer>(0);
-
 		// bg color
 		this->setColor(Mod::get()->getSettingValue<ccColor3B>("bg-color"));
 		this->setOpacity(0);
 
-		m_fields->id = Mod::get()->getSavedValue<bool>("dual");
+		// keep the preview frames and the slot frames in the same mode as the
+		// editor we were opened for
+		if (m_initialDual.has_value())
+			Mod::get()->setSavedValue("dual", *m_initialDual);
+		m_fields->id = m_initialDual.value_or(Mod::get()->getSavedValue<bool>("dual"));
 
 		// hide the frame
 		this->m_mainLayer->getChildByTag(1)->setVisible(false);
@@ -110,10 +222,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		m_fields->preview->setTag(514);
 		this->m_mainLayer->addChild(m_fields->preview);
 
-		this->m_uiNode1 = this->m_fields->map->getTargetNode(m_fields->id);
-		this->m_uiNode2 = this->m_fields->map->getTargetNode(2);
-		this->m_uiNode3 = this->m_fields->map->getTargetNode(3);
-		this->m_uiNode4 = this->m_fields->map->getTargetNode(4);
+		// the map preview owns the editable nodes
 
         // pos menu
 		m_fields->posMenu = PosInputBundle::create();
@@ -129,10 +238,10 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		panel->setID("panel");
 		this->m_mainLayer->addChild(panel);
 
-		this->m_nameLabel = CCLabelBMFont::create(m_fields->id ? "P1 Move" : "Single Mode", "bigFont.fnt");
-		this->m_nameLabel->setPosition(ccp(m_fields->size.width / 2, 100.f));
-		this->m_nameLabel->setScale(0.7);
-		panel->addChild(this->m_nameLabel);
+		this->m_fields->nameLabel = CCLabelBMFont::create(m_fields->id ? "P1 Move" : "Single Mode", "bigFont.fnt");
+		this->m_fields->nameLabel->setPosition(ccp(m_fields->size.width / 2, 100.f));
+		this->m_fields->nameLabel->setScale(0.7);
+		panel->addChild(this->m_fields->nameLabel);
 
         // width menu
 		m_fields->widthMenu = InputSliderBundle::create("Width", 0, 400.f, 0);
@@ -179,34 +288,34 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 
 		m_fields->modeLabel = CCLabelBMFont::create("Mode B", "bigFont.fnt");
 		m_fields->modeLabel->setScale(0.6);
-		m_fields->modeBtn = CCMenuItemSpriteExtra::create(m_fields->modeLabel, this, menu_selector(PlatformOptionsLayer::onMode));
+		m_fields->modeBtn = CCMenuItemSpriteExtra::create(m_fields->modeLabel, this, menu_selector(PlatformEditorLayer::onMode));
 		m_fields->modeBtn->setTag(-17);
 		optMenu->addChildAtPosition(m_fields->modeBtn, Anchor::Center, ccp(-180.f, 0.f));
 
 		m_fields->snapLabel = CCLabelBMFont::create("Snap", "bigFont.fnt");
 		m_fields->snapLabel->setScale(0.6);
-		m_fields->snap0Btn = CCMenuItemSpriteExtra::create(m_fields->snapLabel, this, menu_selector(PlatformOptionsLayer::onSnap0));
+		m_fields->snap0Btn = CCMenuItemSpriteExtra::create(m_fields->snapLabel, this, menu_selector(PlatformEditorLayer::onSnap0));
 		m_fields->snap0Btn->setTag(-24);
 		optMenu->addChildAtPosition(m_fields->snap0Btn, Anchor::Center, ccp(-60.f, 0.f));
 
 		m_fields->splitLabel = CCLabelBMFont::create("Split", "bigFont.fnt");
 		m_fields->splitLabel->setScale(0.6);
-		m_fields->splitBtn = CCMenuItemSpriteExtra::create(m_fields->splitLabel, this, menu_selector(PlatformOptionsLayer::onSplit));
+		m_fields->splitBtn = CCMenuItemSpriteExtra::create(m_fields->splitLabel, this, menu_selector(PlatformEditorLayer::onSplit));
 		m_fields->splitBtn->setTag(-27);
 		optMenu->addChildAtPosition(m_fields->splitBtn, Anchor::Center, ccp(60.f, 0.f));
 
 		m_fields->jumplLabel = CCLabelBMFont::create("Jump L", "bigFont.fnt");
 		m_fields->jumplLabel->setScale(0.6);
-		m_fields->jumplBtn = CCMenuItemSpriteExtra::create(m_fields->jumplLabel, this, menu_selector(PlatformOptionsLayer::onJumpL));
+		m_fields->jumplBtn = CCMenuItemSpriteExtra::create(m_fields->jumplLabel, this, menu_selector(PlatformEditorLayer::onJumpL));
 		m_fields->jumplBtn->setTag(-26);
 		optMenu->addChildAtPosition(m_fields->jumplBtn, Anchor::Center, ccp(180.f, 0.f));
 
 		m_fields->symmetryLabel = CCLabelBMFont::create("Symmetry", "bigFont.fnt");
 		m_fields->symmetryLabel->setScale(0.6);
-		m_fields->symmetryBtn = CCMenuItemSpriteExtra::create(m_fields->symmetryLabel, this, menu_selector(PlatformOptionsLayer::onSymmetry));
+		m_fields->symmetryBtn = CCMenuItemSpriteExtra::create(m_fields->symmetryLabel, this, menu_selector(PlatformEditorLayer::onSymmetry));
 		optMenu->addChildAtPosition(m_fields->symmetryBtn, Anchor::Center, ccp(180.f, 0.f));
 
-		m_fields->jumplLabel->setColor(this->getValue(-26) ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
+		m_fields->jumplLabel->setColor(gm->getGameVariable("0113") ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
 		m_fields->symmetryLabel->setColor(Mod::get()->getSavedValue<bool>("symmetry") ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
 
 		m_fields->jumplBtn->setScale(m_fields->id == 0);
@@ -235,7 +344,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 
         auto slotAplSpr = CCSprite::create("applyBtn.png"_spr);
         slotAplSpr->setScale(0.6f);
-        this->m_fields->applyBtn = CCMenuItemSpriteExtra::create(slotAplSpr, this, menu_selector(PlatformOptionsLayer::onClose));
+        this->m_fields->applyBtn = CCMenuItemSpriteExtra::create(slotAplSpr, this, menu_selector(PlatformEditorLayer::onClose));
         this->m_fields->slotAplMenu = CCMenu::create();
         this->m_fields->slotAplMenu->setContentSize(ccp(0.f, 0.f));
         this->m_fields->slotAplMenu->setScale(0.f);
@@ -246,13 +355,15 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 
 		// buttons below
         std::map<int, std::pair<const char*, SEL_MenuHandler>> btnIndexes = {
-            {-120, {"optionsBtn.png"_spr, menu_selector(PlatformOptionsLayer::onOptions)}},			
-			{-80, {"dualBtn.png"_spr, menu_selector(PlatformOptionsLayer::onDual)}},
-			{-40, {"slotBtn.png"_spr, menu_selector(PlatformOptionsLayer::onBrowseSlot)}},
-            {0, {"fullscreenBtn.png"_spr, menu_selector(PlatformOptionsLayer::onPreview)}},
-            {40, {"snapBtn.png"_spr, menu_selector(PlatformOptionsLayer::onSnap)}},
-            {80, {"resetBtn.png"_spr, menu_selector(PlatformOptionsLayer::onResetNew)}},
-            {120, {"applyBtn.png"_spr, menu_selector(PlatformOptionsLayer::onClose)}}
+            {-160, {"optionsBtn.png"_spr, menu_selector(PlatformEditorLayer::onOptions)}},
+            {-120, {"dualBtn.png"_spr, menu_selector(PlatformEditorLayer::onDual)}},
+            {-80, {"slotBtn.png"_spr, menu_selector(PlatformEditorLayer::onBrowseSlot)}},
+            {-40, {"fullscreenBtn.png"_spr, menu_selector(PlatformEditorLayer::onPreview)}},
+            {0, {"snapBtn.png"_spr, menu_selector(PlatformEditorLayer::onSnap)}},
+            {40, {"resetBtn.png"_spr, menu_selector(PlatformEditorLayer::onResetNew)}},
+            {80, {"copyBtn.png"_spr, menu_selector(PlatformEditorLayer::onCopy)}},
+            {120, {"pasteBtn.png"_spr, menu_selector(PlatformEditorLayer::onPaste)}},
+            {160, {"applyBtn.png"_spr, menu_selector(PlatformEditorLayer::onClose)}}
         };
 
 
@@ -301,9 +412,6 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		} else
 			this->m_fields->map->updateState(0, gm->m_dpad1);
 
-		if (Mod::get()->getSettingValue<bool>("dont-crash"))
-			return true;
-
 		m_fields->radioBGC = SettingChangedEventV3(Mod::get(), "bg-color").listen([this] (std::shared_ptr<SettingV3> setting) -> ListenerResult {
 			auto val = Mod::get()->getSettingValue<ccColor3B>("bg-color");
 			this->runAction(CCTintTo::create(0.2, val.r, val.g, val.b));
@@ -340,7 +448,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 					this->m_fields->id = value;
 					//log::info("switch id = {}", m_fields->id);
 					bool p2 = value == 2 || value == 4;
-					this->m_nameLabel->setString(fmt::format("P{} {}", p2 ? "2" : "1", value < 3 ? "Move" : "Jump").c_str());
+					this->m_fields->nameLabel->setString(fmt::format("P{} {}", p2 ? "2" : "1", value < 3 ? "Move" : "Jump").c_str());
 					this->refreshValue();
 					// input slider bundles tag
 					this->m_fields->widthMenu->setTag(-value);
@@ -459,20 +567,16 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		else if (tag < 0) {
 			if (tag >= -4 && tag <= -1) {
 				this->m_fields->config[m_fields->id]->m_width = value;
-				this->valueDidChange(tag, value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
 					this->m_fields->config[mirror]->m_width = value;
-					this->valueDidChange(tag > -3 ? -3 - tag : -7 - tag, value);			
 				}
 			}
 			if (tag >= -8 && tag <= -5) {
 				this->m_fields->config[m_fields->id]->m_height = value;
-				this->valueDidChange(tag, value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = m_fields->id < 3 ? 3 - m_fields->id : 7 - m_fields->id;
 					this->m_fields->config[mirror]->m_height = value;
-					this->valueDidChange(tag > -7 ? -11 - tag : -15 - tag, value);
 				}
 			}
 			if (tag >= -12 && tag <= -9) {
@@ -495,21 +599,17 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			}
 			if (tag == -21 || tag == -22) {
 				this->m_fields->config[m_fields->id]->m_deadzone = value;
-				this->valueDidChange(tag, value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = 3 - m_fields->id;
 					this->m_fields->config[mirror]->m_deadzone = value;
-					this->valueDidChange(-43 - tag, value);
 				}
 			}
 			if (tag == -19 || tag == -20) {
 				this->m_fields->config[m_fields->id]->m_radius = value;
 				//this->m_fields->map->radiusNode(m_fields->id, value);
-				this->valueDidChange(tag, value);
 				if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 					auto mirror = 3 - m_fields->id;
 					this->m_fields->config[mirror]->m_radius = value;
-					this->valueDidChange(-39 - tag, value);
 					//this->m_fields->map->radiusNode(mirror, value);
 				}
 			}
@@ -527,7 +627,10 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 			m_fields->map->helpTransition(in);
 		} else {
 			this->m_fields->inprev = !in;
-			m_fields->opl->setVisible(in);
+			if (this->m_fields->inprev)
+				this->enterFullscreenPreview();
+			else
+				this->exitFullscreenPreview();
 			this->m_fields->map->stopAllActions();
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 1 - 0.5 * in)));
 			this->m_fields->map->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(100.f * in, 30.f * in))));
@@ -569,7 +672,6 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		if (prev) {
 			this->m_fields->inprev = !in;
 			this->m_fields->preview->setTouchEnabled(!in);
-			//m_fields->opl->setVisible(in);
 			this->m_fields->titleLabel->stopAllActions();
 			this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCScaleTo::create(0.4, 0.35 * (in + 1))));
 			this->m_fields->titleLabel->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, ccp(m_fields->size.width / 2, m_fields->size.height * 3 / 4 + 100.f - in * 50.f))));
@@ -700,6 +802,53 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		m_fields->splitLabel->setColor(this->m_fields->config[m_fields->id]->m_split ? ccc3(128, 255, 128) : ccc3(255, 128, 128));
 	}
 
+	// put the preview nodes back in sync with the game configuration
+	void refreshPreview(float d = 0.f) {
+		if (this->m_fields->id) {
+			this->m_fields->map->updateState(1, gm->m_dpad2, d);
+			this->m_fields->map->updateState(2, gm->m_dpad3, d);
+			this->m_fields->map->updateState(3, gm->m_dpad4, d);
+			this->m_fields->map->updateState(4, gm->m_dpad5, d);
+		} else
+			this->m_fields->map->updateState(0, gm->m_dpad1, d);
+	}
+
+	// the vanilla touch editor gained a copy / paste pair in 2.209; this is the
+	// same idea for the global configuration: all five button configs and the
+	// jump-left game variable, serialised with the game's own dpad format
+	std::string serialiseConfig() {
+		return fmt::format("{}|{}|{}|{}|{}|{}",
+			gm->dpadConfigToString(gm->m_dpad1),
+			gm->dpadConfigToString(gm->m_dpad2),
+			gm->dpadConfigToString(gm->m_dpad3),
+			gm->dpadConfigToString(gm->m_dpad4),
+			gm->dpadConfigToString(gm->m_dpad5),
+			gm->getGameVariable("0113") ? 1 : 0
+		);
+	}
+
+	bool applySerialisedConfig(std::string const& data) {
+		std::vector<std::string> parts;
+		size_t start = 0;
+		while (true) {
+			auto pos = data.find('|', start);
+			parts.push_back(data.substr(start, pos == std::string::npos ? std::string::npos : pos - start));
+			if (pos == std::string::npos)
+				break;
+			start = pos + 1;
+		}
+		if (parts.size() != 6)
+			return false;
+
+		gm->loadDpadFromString(gm->m_dpad1, parts[0]);
+		gm->loadDpadFromString(gm->m_dpad2, parts[1]);
+		gm->loadDpadFromString(gm->m_dpad3, parts[2]);
+		gm->loadDpadFromString(gm->m_dpad4, parts[3]);
+		gm->loadDpadFromString(gm->m_dpad5, parts[4]);
+		gm->setGameVariable("0113", parts[5] == "1");
+		return true;
+	}
+
 	// switch dual mode
 	void onDual(CCObject*) {
 		if (this->m_fields->id > 2) {
@@ -714,7 +863,7 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		// tint button
 		this->m_fields->dualBtn->runAction(this->m_fields->id ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
 		// title label
-		this->m_nameLabel->setString(m_fields->id ? "P1 Move" : "Single Mode");
+		this->m_fields->nameLabel->setString(m_fields->id ? "P1 Move" : "Single Mode");
 		// input slider bundles tag
 		this->m_fields->widthMenu->setTag(-1);
 		this->m_fields->heightMenu->setTag(-5);
@@ -736,50 +885,48 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		this->m_fields->preview->switchDual();
 	}
 	
-	// switch dual mode
+	// switch modeB
 	void onMode(CCObject*) {
-		int t = -17 - (m_fields->id == 2);
-		this->m_fields->config[m_fields->map->getCurrent()]->m_modeB = !this->getValue(t);
-		this->valueDidChange(t, !this->getValue(t));
-		this->m_fields->modeLabel->runAction(this->getValue(t) ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+		auto current = m_fields->map->getCurrent();
+		auto config = this->m_fields->config[current];
+		config->m_modeB = !config->m_modeB;
+		this->m_fields->modeLabel->runAction(config->m_modeB ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
 		// dual symmetry
 		if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 			auto mirror = 3 - m_fields->id;
-			this->m_fields->config[mirror]->m_modeB = this->getValue(t);
-			this->valueDidChange(-35 - t, this->getValue(t));
+			this->m_fields->config[mirror]->m_modeB = config->m_modeB;
 		}
 	}
 
 	// switch robtop's snap option
 	void onSnap0(CCObject*) {
-		int t = -24 - (m_fields->id == 2);
-		this->valueDidChange(t, !this->getValue(t));
-		this->m_fields->snapLabel->runAction(this->getValue(t) ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+		auto current = m_fields->map->getCurrent();
+		auto config = this->m_fields->config[current];
+		config->m_snap = !config->m_snap;
+		this->m_fields->snapLabel->runAction(config->m_snap ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
 		// dual symmetry
 		if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 			auto mirror = 3 - m_fields->id;
-			this->m_fields->config[mirror]->m_snap = this->getValue(t);
-			this->valueDidChange(-49 - t, this->getValue(t));
+			this->m_fields->config[mirror]->m_snap = config->m_snap;
 		}
 	}
 
 	// switch split option
 	void onSplit(CCObject*) {
-		int t = -27 - (m_fields->id == 2);
-		this->valueDidChange(t, !this->getValue(t));
-		this->m_fields->splitLabel->runAction(this->getValue(t) ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+		auto current = m_fields->map->getCurrent();
+		auto config = this->m_fields->config[current];
+		config->m_split = !config->m_split;
+		this->m_fields->splitLabel->runAction(config->m_split ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
 		// dual symmetry
 		if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 			auto mirror = 3 - m_fields->id;
-			this->m_fields->config[mirror]->m_split = this->getValue(t);
-			this->valueDidChange(-55 - t, this->getValue(t));
+			this->m_fields->config[mirror]->m_split = config->m_split;
 		}
 	}
 
 	// switch jumpL option (single mode only)
 	void onJumpL(CCObject*) {
 		gm->setGameVariable("0113", !gm->getGameVariable("0113"));
-		//this->valueDidChange(-26, !this->getValue(-26));
 		this->m_fields->jumplLabel->runAction(gm->getGameVariable("0113") ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
 	}
 	
@@ -788,6 +935,29 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 		Mod::get()->setSavedValue("symmetry", !Mod::get()->getSavedValue<bool>("symmetry"));
 		m_fields->symmetryLabel->runAction(Mod::get()->getSavedValue<bool>("symmetry") ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
 		// do something
+	}
+	
+	// copy the whole global touch configuration
+	void onCopy(CCObject*) {
+		Mod::get()->setSavedValue("clipboard", this->serialiseConfig());
+		this->showNotify("Config copied.");
+	}
+
+	// paste it back into the global touch configuration
+	void onPaste(CCObject*) {
+		auto clipboard = Mod::get()->getSavedValue<std::string>("clipboard");
+		if (clipboard.empty()) {
+			this->showNotify("Clipboard is empty!", true);
+			return;
+		}
+		if (!this->applySerialisedConfig(clipboard)) {
+			this->showNotify("Clipboard is invalid!", true);
+			return;
+		}
+		this->refreshValue();
+		this->refreshPreview(0.2f);
+		this->m_fields->jumplLabel->runAction(gm->getGameVariable("0113") ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
+		this->showNotify("Config pasted.");
 	}
 	
 	// options
@@ -890,5 +1060,51 @@ class $modify(PlatformOptionsLayer, UIOptionsLayer) {
 				CallFuncExt::create([this] () { this->SetupTriggerPopup::keyBackClicked(); }),
 				nullptr
 			));
+	}
+};
+
+// Geometry Dash 2.209 replaced the old Windows platformer buttons UI
+// (UIOptionsLayer) with the new touch controls editor (TouchControlEditLayer).
+// We keep this mod's old behaviour of replacing the whole UI: the global editor
+// (the instance created with a null config) is closed before it can show itself
+// and our editor is opened instead. `show()` is not declared by this class in
+// the bindings, so the swap happens in `onEnter`.
+class $modify(BetterTouchControlsEditor, TouchControlEditLayer) {
+	static inline TouchControlEditLayer* s_globalEditor = nullptr;
+	static inline bool s_globalDual = false;
+
+	static TouchControlEditLayer* create(bool dual, LevelControlConfig* config) {
+		auto ret = TouchControlEditLayer::create(dual, config);
+		if (ret && !config) {
+			s_globalEditor = ret;
+			s_globalDual = dual;
+		}
+		return ret;
+	}
+
+	void onEnter() {
+		bool replace = this == s_globalEditor;
+		bool dual = s_globalDual;
+		if (replace)
+			s_globalEditor = nullptr;
+
+		TouchControlEditLayer::onEnter();
+
+		if (!replace)
+			return;
+
+		// let the game finish adding this layer, then close it without saving
+		// (its OK / back button is what commits the config, and we are not
+		// using the vanilla controls) and show our own editor
+		this->runAction(CCSequence::create(
+			CCDelayTime::create(0.f),
+			CallFuncExt::create([this, dual] () {
+				if (auto editor = PlatformEditorLayer::create(dual)) {
+					editor->show();
+				}
+				this->SetupTriggerPopup::onClose(nullptr);
+			}),
+			nullptr
+		));
 	}
 };

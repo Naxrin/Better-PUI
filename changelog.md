@@ -1,5 +1,8 @@
-### Note
-- For PCP mod, I honestly cannot add the allow-drag in preview feature in my own mod, it appears like dragging PCP node in preview mode will remain fixed to be allowed. I will pull request there later.
+# 5.4.0
+- Port to Geode 6 and Geometry Dash 2.2091
+- Add copy / paste buttons to Platform setup menu (same idea as the vanilla editor's new pair): copying stores the whole global touch configuration (all five button configs and Jump L), pasting applies it back.
+- Remove leftovers of the old Crash Protect option, it's now fixed.
+
 # 4.3.6
 - Fix a terribly stupid bug
 
