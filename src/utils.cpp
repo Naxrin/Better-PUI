@@ -466,16 +466,16 @@ bool PlatformPreviewFrame::ccTouchBegan(CCTouch* touch, CCEvent* event) {
 
 void PlatformPreviewFrame::ccTouchMoved(CCTouch* touch, CCEvent* event) {
     auto delta = touch->getDelta();
-    auto dest = this->getChildByTag(current)->getPosition() + delta / this->getScale();
-    this->getChildByTag(current)->setPosition(dest);
+    auto dest = this->getChildByTag(this->current)->getPosition() + delta / this->getScale();
+    this->getChildByTag(this->current)->setPosition(dest);
     PosSignal().send(false, dest);
 }
 
 void PlatformPreviewFrame::ccTouchEnded(CCTouch* touch, CCEvent* event) {
     auto delta = touch->getDelta();
-    auto dest = this->getChildByTag(current)->getPosition() + delta / this->getScale();
+    auto dest = this->getChildByTag(this->current)->getPosition() + delta / this->getScale();
     if (!Mod::get()->getSavedValue<bool>("snap")) {
-        this->getChildByTag(current)->setPosition(dest);
+        this->getChildByTag(this->current)->setPosition(dest);
         PosSignal().send(true, dest);
         return;
     }
@@ -485,7 +485,7 @@ void PlatformPreviewFrame::ccTouchEnded(CCTouch* touch, CCEvent* event) {
     int vd = Mod::get()->getSettingValue<int64_t>("vert-distance");
     
     dest = ccp(c.width + hd * round((dest.x - c.width) / hd), c.height + vd * round((dest.y - c.height) / vd));
-    this->getChildByTag(current)->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, dest)));
+    this->getChildByTag(this->current)->runAction(CCEaseExponentialOut::create(CCMoveTo::create(0.4, dest)));
     PosSignal().send(true, dest);
 }
 

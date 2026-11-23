@@ -6,13 +6,6 @@
 #include <optional>
 
 // platform
-//
-// Geometry Dash 2.209 replaced the old Windows platformer buttons UI
-// (UIOptionsLayer) with the new touch controls editor (TouchControlEditLayer),
-// so this mod now replaces *that* editor instead: when the game asks for the
-// global touch configuration editor, we show our own UI. Level-specific custom
-// controls keep the vanilla editor because our UI only knows the global
-// configuration, which is still stored in GameManager's dpad settings.
 class PlatformEditorLayer : public SetupTriggerPopup {
 protected:
 	struct Fields {
@@ -154,7 +147,7 @@ public:
 	}
 
 protected:
-	bool init() {
+	bool init() override {
 		if (!SetupTriggerPopup::init(nullptr, nullptr, 420.f, 280.f, 1, 0.f))
 			return false;
 
