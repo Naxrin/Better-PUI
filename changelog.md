@@ -1,6 +1,7 @@
-# 5.4.0
+# 5.4.1
 - Port to Geode 6 and Geometry Dash 2.2091
 - Add copy / paste buttons to Platform setup menu (same idea as the vanilla editor's new pair): copying stores the whole global touch configuration (all five button configs and Jump L), pasting applies it back.
+- Mode B / Snap / Split now refresh the preview immediately instead of doing nothing: Mode B hides the button sprites (only the hit box and deadzone circle stay visible, like the vanilla editor) and Split switches the buttons to jump sprites
 - Remove leftovers of the old Crash Protect option, it's now fixed.
 
 # 4.3.6

@@ -1,5 +1,5 @@
 {
-	"geode": "6.0.0-beta.2",
+	"geode": "6.0.0",
 	"gd": {
 		"win": "2.2091",
 		"android": "2.2091",
@@ -8,7 +8,7 @@
 	},
 	"id": "naxrin.better_pui",
 	"name": "Better Platform & Practice Config UI",
-	"version": "v5.4.0",
+	"version": "v5.4.1",
 	"developer": "Naxrin",
 	"description": "Better Platform/Practice Buttons config UI",
 	"tags": ["interface", "offline"],
@@ -22,7 +22,7 @@
 	},
 	"dependencies": {
 		"geode.node-ids": {
-			"version": "1.24.0-beta.1",
+			"version": "1.24.0",
 			"required": true
 	    }
 	},

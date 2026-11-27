@@ -12,12 +12,7 @@ But anyway it's already here.
 ### <cy>Geometry Dash 2.209 note:</c>
 2.209 replaced the old platformer buttons UI (`UIOptionsLayer`) on Windows with the new touch controls editor, so this mod now replaces that editor instead: opening the global touch controls settings gives you this mod's UI, with exact positions, sizes, scale, opacity, deadzone and radius, grid snapping, three save slots with previews, symmetric P2 editing and copy / paste of the whole configuration. Level-specific custom controls keep the vanilla editor. The Practice UI replacement works exactly like before.
 
-### <cy>Note that:</c>
-I can't get where RobTop's snap and split option toggler (in the Platform buttons config UI) actually take effects smh, but in case it really does something, they are preserved as a text label button and linked with RobTop's original toggler callback for each.  
-**Welcome to share with me if you have an idea on the two options!**  
-
 ### <cy>Contact / Report Bugs</c>
-- Github issue
-- Discord: [Naxrin#6957](https://discordapp.com/users/414986613962309633) (recommended)  
-- Twitter / X: [@Naxrin19](https://x.com/Naxrin19) (not really check it often)
-- In-Game ID: Naxrin
+- Github: [Post an Issue](https://github.com/Naxrin/Better-PUI/issues)
+- Discord: [Naxrin#6957](https://discordapp.com/users/414986613962309633)
+- In-Game ID: [Naxrin](user:4759632)

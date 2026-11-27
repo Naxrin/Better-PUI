@@ -169,6 +169,8 @@ public:
     // update the state of a node
     void updateState(int tag, const UIButtonConfig &config, float d = 0);
     void updateState(GJUINode* node, const UIButtonConfig &config, float d = 0);
+    // refresh only the button shapes (Mode B / Split), used by the toggles
+    void updateStyle(int tag, const UIButtonConfig &config);
     // set position of target node with action
     void placeNode(int tag, const CCPoint& pos, float d = 0);
     void placeNode(GJUINode* node, const CCPoint& pos, float d = 0);

@@ -553,9 +553,14 @@ void PlatformPreviewFrame::updateState(GJUINode* node, const UIButtonConfig &con
     node->m_modeB = config.m_modeB;
     node->m_snap = config.m_snap;
     node->m_split = config.m_split;
-    
-    node->m_firstSprite->setVisible(!config.m_modeB);
-    if (!node->m_oneButton)
+    node->m_oneButton = config.m_oneButton;
+    node->m_player2 = config.m_player2;
+
+    // Mode B does not draw the button sprites at all in the vanilla editor:
+    // only the hit box and the deadzone circle remain visible
+    if (node->m_firstSprite)
+        node->m_firstSprite->setVisible(!config.m_modeB);
+    if (node->m_secondSprite)
         node->m_secondSprite->setVisible(!config.m_modeB);
 
     node->updateButtonFrames();
@@ -564,6 +569,32 @@ void PlatformPreviewFrame::updateState(GJUINode* node, const UIButtonConfig &con
     this->scaleNode(node, config.m_scale, d);
     this->alphaNode(node, config.m_opacity, d);
     this->radiusNode(node, config.m_radius, d);
+}
+
+// refresh only the button shapes: Mode B / Split change which sprite frames
+// GJUINode uses, and the vanilla editor re-runs updateButtonFrames when those
+// toggles are pressed
+void PlatformPreviewFrame::updateStyle(int tag, const UIButtonConfig &config) {
+    auto node = static_cast<GJUINode*>(this->getChildByTag(tag));
+    if (!node)
+        return;
+
+    node->m_rect.size = ccp(config.m_width, config.m_height);
+    node->m_rect.origin = ccp(-config.m_width / 2.f, -config.m_height / 2.f);
+    node->m_deadzone = config.m_deadzone;
+    node->m_modeB = config.m_modeB;
+    node->m_snap = config.m_snap;
+    node->m_split = config.m_split;
+    node->m_oneButton = config.m_oneButton;
+    node->m_player2 = config.m_player2;
+    node->m_radius = config.m_radius;
+
+    if (node->m_firstSprite)
+        node->m_firstSprite->setVisible(!config.m_modeB);
+    if (node->m_secondSprite)
+        node->m_secondSprite->setVisible(!config.m_modeB);
+
+    node->updateButtonFrames();
 }
 
 // set position of target node

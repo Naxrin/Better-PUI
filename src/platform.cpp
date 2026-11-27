@@ -883,11 +883,13 @@ protected:
 		auto current = m_fields->map->getCurrent();
 		auto config = this->m_fields->config[current];
 		config->m_modeB = !config->m_modeB;
+		this->m_fields->map->updateStyle(current, *config);
 		this->m_fields->modeLabel->runAction(config->m_modeB ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
 		// dual symmetry
 		if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 			auto mirror = 3 - m_fields->id;
 			this->m_fields->config[mirror]->m_modeB = config->m_modeB;
+			this->m_fields->map->updateStyle(mirror, *this->m_fields->config[mirror]);
 		}
 	}
 
@@ -896,11 +898,13 @@ protected:
 		auto current = m_fields->map->getCurrent();
 		auto config = this->m_fields->config[current];
 		config->m_snap = !config->m_snap;
+		this->m_fields->map->updateStyle(current, *config);
 		this->m_fields->snapLabel->runAction(config->m_snap ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
 		// dual symmetry
 		if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 			auto mirror = 3 - m_fields->id;
 			this->m_fields->config[mirror]->m_snap = config->m_snap;
+			this->m_fields->map->updateStyle(mirror, *this->m_fields->config[mirror]);
 		}
 	}
 
@@ -909,11 +913,13 @@ protected:
 		auto current = m_fields->map->getCurrent();
 		auto config = this->m_fields->config[current];
 		config->m_split = !config->m_split;
+		this->m_fields->map->updateStyle(current, *config);
 		this->m_fields->splitLabel->runAction(config->m_split ? CCTintTo::create(0.4, 128, 255, 128) : CCTintTo::create(0.4, 255, 128, 128));
 		// dual symmetry
 		if (m_fields->id && Mod::get()->getSavedValue<bool>("symmetry")) {
 			auto mirror = 3 - m_fields->id;
 			this->m_fields->config[mirror]->m_split = config->m_split;
+			this->m_fields->map->updateStyle(mirror, *this->m_fields->config[mirror]);
 		}
 	}
 
