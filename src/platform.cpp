@@ -1,8 +1,11 @@
 #include "head.hpp"
 #include <Geode/modify/TouchControlEditLayer.hpp>
 #include <Geode/binding/PauseLayer.hpp>
+#if !defined(GEODE_IS_MACOS)
 #include <Geode/binding/PlatformerControlsPopup.hpp>
+#endif
 
+#include <cstring>
 #include <optional>
 
 // platform
@@ -51,7 +54,8 @@ protected:
 
 		// hidden while the fullscreen preview is open
 		PauseLayer* pauseLayer = nullptr;
-		PlatformerControlsPopup* controlsPopup = nullptr;
+		// CCNode, not PlatformerControlsPopup: see findPlatformerControlsPopup
+		CCNode* controlsPopup = nullptr;
 		bool pauseWasVisible = true;
 		bool popupWasVisible = true;
 	};
@@ -82,6 +86,33 @@ protected:
 		return false;
 	}
 
+#if defined(GEODE_IS_MACOS)
+	// The bindings have no macOS address for PlatformerControlsPopup's
+	// destructor. That destructor is the class' key function, so Geode never
+	// generates a definition for it on macOS, which means the RTTI for the
+	// class is never emitted either and typeinfo_cast<PlatformerControlsPopup*>
+	// fails to link (both arm64 and x86_64):
+	//
+	//   "typeinfo for PlatformerControlsPopup", referenced from: ...
+	//
+	// The vtable of every live instance still points at a typeinfo object whose
+	// name is exactly what typeinfo_cast compares, so match on that name
+	// instead. The string is the Itanium mangled name (23 is its length).
+	static CCNode* findPlatformerControlsPopup(CCNode* root) {
+		if (!root)
+			return nullptr;
+		for (auto child : CCArrayExt<CCNode*>(root->getChildren())) {
+			if (!child)
+				continue;
+			if (std::strcmp(cast::getRuntimeTypeName(child), "23PlatformerControlsPopup") == 0)
+				return child;
+			if (auto found = findPlatformerControlsPopup(child))
+				return found;
+		}
+		return nullptr;
+	}
+#endif
+
 	// in fullscreen preview the level is the only thing the player should see:
 	// hide the pause menu and the level controls popup (if they are there) and
 	// make our own background transparent
@@ -101,7 +132,11 @@ protected:
 			}
 		}
 		if (!m_fields->controlsPopup) {
+#if defined(GEODE_IS_MACOS)
+			m_fields->controlsPopup = findPlatformerControlsPopup(scene);
+#else
 			m_fields->controlsPopup = findNodeOfType<PlatformerControlsPopup>(scene);
+#endif
 			if (m_fields->controlsPopup && !isNodeInside(this, m_fields->controlsPopup)) {
 				m_fields->popupWasVisible = m_fields->controlsPopup->isVisible();
 				m_fields->controlsPopup->setVisible(false);
@@ -1069,9 +1104,15 @@ protected:
 // and our editor is opened instead. `show()` is not declared by this class in
 // the bindings, so the swap happens in `onEnter`.
 class $modify(BetterTouchControlsEditor, TouchControlEditLayer) {
+#if !defined(GEODE_IS_IOS)
 	static inline TouchControlEditLayer* s_globalEditor = nullptr;
 	static inline bool s_globalDual = false;
 
+	// There is no iOS address for TouchControlEditLayer::create in the
+	// bindings. Hooking a function without an address is a hard compile error
+	// (GEODE_APPLY_MODIFY_FOR_FUNCTION_ERROR_DEFINED static_assert), so on iOS
+	// the global editor is recognised from its fields in onEnter instead; see
+	// there. Every other platform keeps using this hook.
 	static TouchControlEditLayer* create(bool dual, LevelControlConfig* config) {
 		auto ret = TouchControlEditLayer::create(dual, config);
 		if (ret && !config) {
@@ -1080,12 +1121,22 @@ class $modify(BetterTouchControlsEditor, TouchControlEditLayer) {
 		}
 		return ret;
 	}
+#endif
 
 	void onEnter() {
+#if defined(GEODE_IS_IOS)
+		// create() -> init() copies both of its arguments into the instance
+		// without touching them (init stores the mode flag at +0x3f4 and the
+		// LevelControlConfig* at +0x3f8), so this is exactly the information
+		// the create hook gives us on the other platforms.
+		bool replace = this->m_targetConfig == nullptr;
+		bool dual = this->m_platformerMode;
+#else
 		bool replace = this == s_globalEditor;
 		bool dual = s_globalDual;
 		if (replace)
 			s_globalEditor = nullptr;
+#endif
 
 		TouchControlEditLayer::onEnter();
 

@@ -752,7 +752,7 @@ std::string SlotFrame::dumpSingleBtn(UIButtonConfig const &config) {
     return fmt::format("{},{},{},{},{},{}",
         config.m_width, config.m_height, config.m_scale, config.m_opacity, config.m_position.x, config.m_position.y)
         + (config.m_oneButton ? "" : fmt::format(",{},{},{},{},{}",
-        int(config.m_modeB), config.m_deadzone, config.m_radius, int(config.m_snap), int(config.m_snap)));
+        int(config.m_modeB), config.m_deadzone, config.m_radius, int(config.m_snap), int(config.m_split)));
 }
 
 void SlotFrame::parse() {
